@@ -20,6 +20,13 @@ def save(history: list) -> None:
     current.write_text(json.dumps(data, indent=2) + "\n")
 
 
+def new() -> None:
+    """Start a fresh session file with zero cost. The old session stays saved."""
+    global current, title
+    current, title = DIR / f"{datetime.now():{STAMP}}.json", ""
+    usage.cost, usage.priced, usage.input_tokens = 0.0, True, 0
+
+
 def load(path: Path) -> list:
     """Make `path` the current session and return its history. Context size is unknown until the next call."""
     global current, title

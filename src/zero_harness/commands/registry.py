@@ -1,9 +1,27 @@
 import inspect
 
-from zero_harness.commands import auto, model, resume, summarize, title, undo
+from zero_harness.commands import (
+    auto,
+    effort,
+    model,
+    new,
+    resume,
+    summarize,
+    title,
+    undo,
+)
 from zero_harness.ui.notes import note
 
-COMMANDS = {"summarize": summarize, "model": model, "resume": resume, "title": title, "auto": auto, "undo": undo}
+COMMANDS = {
+    "new": new,
+    "resume": resume,
+    "model": model,
+    "effort": effort,
+    "auto": auto,
+    "undo": undo,
+    "summarize": summarize,
+    "title": title,
+}
 
 
 async def run(text: str, history: list) -> None:

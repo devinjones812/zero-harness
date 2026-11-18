@@ -40,10 +40,10 @@ def record(response, conversation: bool = True) -> None:
 
 
 def status() -> str:
-    """One line: context wheel and percent, tokens, session cost, model, auto mode."""
+    """One line: context wheel and percent, tokens, session cost, model and effort, auto mode."""
     used = input_tokens / CONTEXT_WINDOW
     wheel = WHEEL[min(round(used * 4), 4)]
     price = f"${cost:.2f}" if priced else f"${cost:.2f}+ (unknown price for {config.get('model')})"
     auto = "  auto" if config.get("auto") else ""
     tokens = f"{input_tokens / 1000:.1f}k" if input_tokens >= 1000 else str(input_tokens)
-    return f" {wheel} {used:.0%} context  {tokens}/1M  {price}  {config.get('model')}{auto}"
+    return f" {wheel} {used:.0%} context  {tokens}/1M  {price}  {config.get('model')} {config.get('effort')}{auto}"

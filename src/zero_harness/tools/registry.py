@@ -36,7 +36,7 @@ async def run(call: dict) -> dict:
             output = await function(**args)
         else:
             output = await asyncio.to_thread(function, **args)
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001 - tool errors go back to the model as text
         output = f"error: {error}"
         note(f"  {output}", style="red")
     if isinstance(output, str):

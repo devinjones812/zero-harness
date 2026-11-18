@@ -96,7 +96,7 @@ async def agent_loop(history: list) -> None:
             note("[interrupted] Stopped this turn.")
         except errors.RECOVERABLE as error:
             errors.report(error)
-        except Exception:
+        except Exception:  # noqa: BLE001 - one failed turn must not crash zero
             note(traceback.format_exc(), style="red")
         errors.repair(history)
         sessions.save(history)

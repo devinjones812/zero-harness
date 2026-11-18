@@ -18,7 +18,12 @@ client = AsyncOpenAI(max_retries=4)
 async def respond(history: list):
     """Stream one model turn to the terminal and return the completed response."""
     stream = await client.responses.create(
-        model=config.get("model"), instructions=INSTRUCTIONS, input=history, tools=registry.SCHEMAS, stream=True
+        model=config.get("model"),
+        instructions=INSTRUCTIONS,
+        input=history,
+        tools=registry.SCHEMAS,
+        stream=True,
+        reasoning={"effort": config.get("effort")},
     )
     response = await print_stream(stream)
     usage.record(response)
@@ -44,6 +49,7 @@ async def complete(history: list) -> str:
         input=history,
         tools=registry.SCHEMAS,
         tool_choice="none",
+        reasoning={"effort": config.get("effort")},
     )
     usage.record(response, conversation=False)
     return response.output_text

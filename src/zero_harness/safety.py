@@ -43,7 +43,7 @@ def review(command: str) -> tuple[bool, str]:
     try:
         with TypeSafeClient() as client:
             answer = client.system_one(state, {"risk": QUESTION}).choices["risk"]
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001 - any Jev failure falls back to asking the user
         return False, f"Jev failed: {error}"
     clear = answer.probabilities["clear"]
     return clear >= AUTO_APPROVE_AT, f"Jev {clear:.0%} clear"

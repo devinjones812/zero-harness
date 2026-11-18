@@ -29,11 +29,14 @@ def on_finish() -> None:
 
 async def start(command: str) -> int:
     """Start a command in the background. Output goes to a log file; on_finish() runs when it exits."""
-    log = Path(tempfile.mkstemp(prefix="zero-harness-job-", suffix=".log")[1])
-    with log.open("w") as out:
+    fd, name = tempfile.mkstemp(prefix="zero-harness-job-", suffix=".log")
+    log = Path(name)
+    try:
         process = await asyncio.create_subprocess_shell(
-            command, stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, start_new_session=True
+            command, stdin=subprocess.DEVNULL, stdout=fd, stderr=subprocess.STDOUT, start_new_session=True
         )
+    finally:
+        os.close(fd)
     job_id = len(jobs) + 1
 
     async def watch() -> None:
@@ -64,6 +67,12 @@ def kill_group(process) -> None:
     """Kill a process started with start_new_session=True, and every child it started."""
     with contextlib.suppress(ProcessLookupError):
         os.killpg(process.pid, signal.SIGKILL)
+
+
+def detach() -> None:
+    """Stop current jobs from reporting to the agent. They keep running and are killed when zero exits."""
+    for job in jobs.values():
+        job.reported = True
 
 
 def any_finished() -> bool:

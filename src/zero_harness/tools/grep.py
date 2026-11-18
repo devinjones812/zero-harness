@@ -23,6 +23,7 @@ SCHEMA = {
 def run(pattern: str, path: str = ".") -> str:
     result = subprocess.run(
         ["rg", "--line-number", "--no-heading", "--color=never", "--max-columns=300", "-e", pattern, path],
+        check=False,
         capture_output=True,
         text=True,
     )

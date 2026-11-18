@@ -6,6 +6,7 @@ PATH = HOME / "config.json"
 
 DEFAULTS = {
     "model": "gpt-6-luna",
+    "effort": "medium",
     "max_tool_rounds": 50,
     "auto": True,
 }

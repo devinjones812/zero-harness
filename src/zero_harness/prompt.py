@@ -1,4 +1,5 @@
 import os
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from zero_harness import config
 USER_RULES = Path.home() / ".cursor/rules/agents.mdc"
 PROJECT_RULES = ["AGENTS.md", "CLAUDE.md"]
 SKILLS = config.HOME / "skills"
+GIT_STATUS_LINES = 30
 
 
 def load_user_rules() -> str:
@@ -25,6 +27,29 @@ def load_project_rules() -> str:
         if Path(name).is_file():
             return f"\n\n# Project rules ({name})\n\n{Path(name).read_text().strip()}"
     return ""
+
+
+def load_git() -> str:
+    """Branch, uncommitted changes, and recent commits at startup, or "" outside a git repo."""
+
+    def git(*args: str) -> str:
+        return subprocess.run(["git", *args], check=False, capture_output=True, text=True, timeout=5).stdout.rstrip()
+
+    try:
+        if git("rev-parse", "--is-inside-work-tree") != "true":
+            return ""
+        status = git("status", "--short").splitlines()
+        log = git("log", "--oneline", "-5") or "(no commits)"
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    if len(status) > GIT_STATUS_LINES:
+        status = status[:GIT_STATUS_LINES] + [f"... {len(status) - GIT_STATUS_LINES} more"]
+    changes = "\n".join(status) or "(clean)"
+    return (
+        f"\n# Git (when the session started; may be stale)\n\n"
+        f"Branch: {git('branch', '--show-current') or '(detached)'}\n"
+        f"Status:\n{changes}\nRecent commits:\n{log}\n"
+    )
 
 
 def load_skills() -> str:
@@ -61,4 +86,27 @@ Rules:
 - Answers are for a terminal: short, plain text, no headers. Lead with the result.
 """
 
-INSTRUCTIONS = f"{BASE}\n# User rules\n\n{load_user_rules()}{load_project_rules()}{load_skills()}"
+SOURCE = Path(__file__).resolve().parent
+REPO = SOURCE.parents[1]
+if (REPO / ".git").exists():
+    INSTALL = f"It is a git clone at {REPO}, installed editable, so source edits apply when the user restarts zero."
+else:
+    INSTALL = (
+        "It is an installed copy, so source edits are lost on upgrade. To change zero, the user should clone "
+        "https://github.com/devinjones812/zero-harness and run `uv tool install --editable .` in the clone."
+    )
+
+SELF = f"""
+# About yourself
+
+You are zero (zero-harness), a Python coding agent harness. The user may ask you to fix, change, or extend yourself.
+- Source: {SOURCE}. {INSTALL}
+- Main loop: main.py. Model calls: llm.py. This prompt: prompt.py. Terminal UI: ui/. Defaults: config.py.
+- Add a tool: tools/<name>.py with SCHEMA and run(), then add it to TOOLS in tools/registry.py.
+- Add a /command: commands/<name>.py with DESCRIPTION and run(history, args), then add it to COMMANDS in commands/registry.py.
+- User data is in {config.HOME}: config.json (settings), .env (API keys), sessions/, skills/<name>/SKILL.md.
+- Changes to code or settings apply after the user restarts zero. After a code change, check that it imports:
+  `uv run --project {REPO} python -c "import zero_harness.main"`.
+"""
+
+INSTRUCTIONS = f"{BASE}{load_git()}{SELF}\n# User rules\n\n{load_user_rules()}{load_project_rules()}{load_skills()}"

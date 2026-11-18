@@ -32,11 +32,13 @@ Run `zero` in any directory. Type while the agent works; it reads your message b
 
 Auto mode (on by default) lets Jev approve routine shell commands. Risky ones still ask.
 
-Commands: `/model`, `/auto`, `/undo`, `/summarize`, `/title`, `/resume`.
+Commands: `/new`, `/resume`, `/model`, `/effort`, `/auto`, `/undo`, `/summarize`, `/title`.
+
+What's planned, and what we left out on purpose: [docs/roadmap.md](docs/roadmap.md).
 
 ## Context
 
-- Your global rules (`~/.cursor/rules/agents.mdc`) and the project's `AGENTS.md` (or `CLAUDE.md`) go into the system prompt.
+- Your global rules (`~/.cursor/rules/agents.mdc`) and the project's `AGENTS.md` (or `CLAUDE.md`) go into the system prompt, with the git branch, status, and recent commits at startup.
 - Skills: add `~/.zero/skills/<name>/SKILL.md` with `name` and `description` frontmatter. The prompt lists each skill; the agent reads the full file only when a task needs it.
 
 ## Add a tool
