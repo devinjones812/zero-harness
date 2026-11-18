@@ -6,7 +6,7 @@ from fnmatch import fnmatch
 from pathlib import Path
 
 from zero_harness import config, safety
-from zero_harness.ui import user_input
+from zero_harness.ui import notes, user_input
 from zero_harness.ui.notes import note
 
 PROTECTED = [".env", ".env.*", ".git", ".ssh", ".aws", ".gnupg", ".netrc", ".npmrc", ".pypirc", "*.pem", "*.key"]
@@ -29,7 +29,7 @@ async def approve_edit(path: str) -> str | None:
     if not config.get("auto"):
         return await ask()
     if reason := edit_risk(path):
-        note(f"  ↳ asking: {reason}")
+        note(f"  ↳ asking: {reason}", style=notes.CAUTION)
         return await ask()
     note("  ↳ auto-approved")
     return None
@@ -52,9 +52,10 @@ async def approve_command(command: str, purpose: str) -> str | None:
     """In auto mode, run commands Jev rates clear without asking. Everything else asks."""
     if config.get("auto"):
         run, reason = await asyncio.to_thread(safety.review, command, SCRATCH)
-        note(f"  ↳ {'auto-approved' if run else 'asking'}: {reason}")
         if run:
+            note(f"  ↳ auto-approved: {reason}")
             return None
+        note(f"  ↳ asking: {reason}", style=notes.CAUTION)
     if purpose:
-        note(f"  ↳ {purpose}")
+        note(f"  ↳ {purpose}", style=notes.CAUTION)
     return await ask()

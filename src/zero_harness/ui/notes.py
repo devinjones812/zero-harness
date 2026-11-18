@@ -14,6 +14,8 @@ USER_STYLE = f"{ACCENT} on {BACKGROUND}"
 MARGIN = 0
 INDENT = " " * MARGIN
 MAX_DIFF_LINES = 20
+THOUGHT_STYLE = "dim italic"
+CAUTION = "#ff9f43"  # commands and edits waiting for the user's approval
 
 after_tools = False
 
@@ -62,7 +64,15 @@ def answer(text: str) -> None:
     console.print(Text.from_ansi(markdown(text)), soft_wrap=True)
 
 
-def markdown(text: str, max_lines: int | None = None) -> str:
+def thought(text: str) -> None:
+    """Print a reasoning summary to scrollback, dim and set apart by a blank line."""
+    global after_tools
+    console.print()
+    console.print(Text.from_ansi(markdown(text, style=THOUGHT_STYLE)), soft_wrap=True)
+    after_tools = True
+
+
+def markdown(text: str, max_lines: int | None = None, style: str = "none") -> str:
     """Render markdown as indented ANSI text with no blank lines around it, keeping only the last `max_lines` lines.
 
     One column narrower than the space left after the margin, so full-width lines never wrap onto an extra row.
@@ -70,7 +80,7 @@ def markdown(text: str, max_lines: int | None = None) -> str:
     buffer = io.StringIO()
     width = console.width - MARGIN - 1
     renderer = Console(file=buffer, force_terminal=True, color_system=console.color_system, width=width)
-    renderer.print(Markdown(text.strip("\n")))
+    renderer.print(Markdown(text.strip("\n"), style=style))
     lines = buffer.getvalue().strip("\n").splitlines()
     return "\n".join(INDENT + line for line in (lines[-max_lines:] if max_lines else lines))
 

@@ -3,15 +3,23 @@ from zero_harness.ui import notes, user_input
 
 
 async def print_stream(stream):
-    """Show the answer word by word in the live area, moving each finished block to scrollback.
+    """Show reasoning summaries and the answer word by word in the live area, moving finished parts to scrollback.
 
     Returns the completed response.
     """
-    text, printed = "", 0
+    text, printed, thought = "", 0, ""
     async with stream:
         try:
             async for event in stream:
-                if event.type == "response.output_text.delta":
+                if event.type == "response.reasoning_summary_text.delta":
+                    thought += event.delta
+                    user_input.show_live(thought, notes.THOUGHT_STYLE)
+                elif event.type == "response.reasoning_summary_part.done":
+                    if thought.strip():
+                        notes.thought(thought)
+                    thought = ""
+                    user_input.show_live("")
+                elif event.type == "response.output_text.delta":
                     text += event.delta
                     printed = commit(text, printed, final=False)
                     user_input.show_live(text[printed:])

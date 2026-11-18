@@ -36,6 +36,7 @@ STYLE = Style.from_dict(
 
 session: PromptSession | None = None
 live = ""
+live_style = "none"
 question = ""
 answer_future: asyncio.Future | None = None
 
@@ -87,7 +88,8 @@ def setup(busy, commands: list[str]) -> None:
     global session
 
     def streamed():
-        return ANSI(notes.markdown(live, max_lines=session.app.output.get_size().rows - 9))
+        rows = session.app.output.get_size().rows - 9
+        return ANSI(notes.markdown(live, max_lines=rows, style=live_style))
 
     def status_line():
         dots = "." * (int(time.monotonic() * 3) % 3 + 1)
@@ -171,9 +173,9 @@ async def read() -> str:
             return text
 
 
-def show_live(text: str) -> None:
-    global live
-    live = text
+def show_live(text: str, style: str = "none") -> None:
+    global live, live_style
+    live, live_style = text, style
     session.app.invalidate()
 
 

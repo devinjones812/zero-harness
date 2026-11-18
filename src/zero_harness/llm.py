@@ -23,7 +23,7 @@ async def respond(history: list):
         input=history,
         tools=registry.SCHEMAS,
         stream=True,
-        reasoning={"effort": config.get("effort")},
+        reasoning={"effort": config.get("effort"), "summary": "auto"},
     )
     response = await print_stream(stream)
     usage.record(response)
