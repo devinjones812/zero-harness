@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from zero_harness import config
+from zero_harness.permissions import SCRATCH
 
 USER_RULES = Path.home() / ".cursor/rules/agents.mdc"
 PROJECT_RULES = ["AGENTS.md", "CLAUDE.md"]
@@ -82,7 +83,9 @@ Rules:
 - If the user denies an action, don't retry it. Ask what they want instead.
 - If a tool returns an error, read it and fix the cause.
 - The user can send messages while you work. They appear between tool calls; follow the latest one.
-- Check your work: run the code or tests after you change something.
+- Check your work with the project's existing tests or by running the code. Don't add tests, docs, or config
+  the user didn't ask for.
+- Put temporary scripts and files in {SCRATCH}. Edits there need no approval; zero deletes it on exit.
 - Answers are for a terminal: short, plain text, no headers. Lead with the result.
 """
 
@@ -105,7 +108,7 @@ You are zero (zero-harness), a Python coding agent harness. The user may ask you
 - Add a tool: tools/<name>.py with SCHEMA and run(), then add it to TOOLS in tools/registry.py.
 - Add a /command: commands/<name>.py with DESCRIPTION and run(history, args), then add it to COMMANDS in commands/registry.py.
 - User data is in {config.HOME}: config.json (settings), .env (API keys), sessions/, skills/<name>/SKILL.md.
-- Changes to code or settings apply after the user restarts zero. After a code change, check that it imports:
+- Changes to code or settings apply after the user types /reload, which restarts zero and keeps the conversation. After a code change, check that it imports:
   `uv run --project {REPO} python -c "import zero_harness.main"`.
 """
 

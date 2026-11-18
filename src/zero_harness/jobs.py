@@ -75,17 +75,22 @@ def detach() -> None:
         job.reported = True
 
 
+def running() -> int:
+    return sum(job.process.returncode is None for job in jobs.values())
+
+
 def any_finished() -> bool:
     return any(not job.reported and job.process.returncode is not None for job in jobs.values())
 
 
-def finished() -> list[str]:
-    """Return one notice per job that finished since the last check."""
+def finished() -> list[tuple[str, str]]:
+    """Return (one line for the user, full notice for the agent) per job that finished since the last check."""
     notices = []
     for job_id, job in jobs.items():
         if not job.reported and job.process.returncode is not None:
             job.reported = True
-            notices.append(f"[background] {status(job_id)}")
+            short = f"[background] job {job_id} exited with code {job.process.returncode}"
+            notices.append((short, f"[background] {status(job_id)}"))
     return notices
 
 

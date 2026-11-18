@@ -31,8 +31,8 @@ def commit(text: str, printed: int, final: bool) -> int:
         if printed == 0:
             notes.section()
         else:
-            print()
-        print(notes.markdown(pending[:end]))
+            notes.console.print()
+        notes.answer(pending[:end])
     return printed + end
 
 

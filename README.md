@@ -8,7 +8,7 @@ A minimal terminal coding agent on the OpenAI Responses API.
 
 Needs macOS, [uv](https://docs.astral.sh/uv/), and [ripgrep](https://github.com/BurntSushi/ripgrep) (`brew install ripgrep`).
 
-Install. This adds `zero` (and `zero-harness`) to your PATH:
+Install. This adds `zero` to your PATH:
 
 ```bash
 uv tool install git+https://github.com/devinjones812/zero-harness
@@ -24,15 +24,17 @@ TYPESAFE_API_KEY=...   # auto mode
 
 Update with `uv tool upgrade zero-harness`. Config, sessions, and skills live in `~/.zero/`, so updates keep them.
 
-To hack on it, clone the repo and run `uv tool install --editable .` instead. Code edits then apply at once.
+To hack on it, clone the repo and run `uv tool install --editable .` instead. Code edits then apply after `/reload`.
 
 ## Use
 
-Run `zero` in any directory. Type while the agent works; it reads your message before its next step. Drag in an image to attach it. Ctrl+C clears the input, stops a turn, or quits.
+Run `zero` in any directory, or `zero "message"` to send a first message. `zero -r` resumes a session. Type while the agent works; it reads your message before its next step. Drag in an image to attach it. Ctrl+C clears the input, stops a turn, or quits.
 
-Auto mode (on by default) lets Jev approve routine shell commands. Risky ones still ask.
+Auto mode (on by default) lets Jev approve routine shell commands. Risky ones still ask. At `allow? [y/N]`, type anything other than y or n to deny and tell the agent why. Temporary files go in a scratch folder that zero deletes on exit.
 
-Commands: `/new`, `/resume`, `/model`, `/effort`, `/auto`, `/undo`, `/summarize`, `/title`.
+Commands: `/new`, `/resume`, `/model`, `/effort`, `/auto`, `/undo`, `/summarize`, `/title`, `/self-improve`, `/reload`.
+
+`/self-improve <note>` commits zero's repo as a checkpoint, then opens a new zero in its own source to find and fix what went wrong in this session. After you approve the fixes, `/reload` restarts zero with the changes and keeps the conversation. Needs a git clone of zero.
 
 What's planned, and what we left out on purpose: [docs/roadmap.md](docs/roadmap.md).
 

@@ -5,11 +5,14 @@ from zero_harness.commands import (
     effort,
     model,
     new,
+    reload,
     resume,
+    self_improve,
     summarize,
     title,
     undo,
 )
+from zero_harness.ui import notes
 from zero_harness.ui.notes import note
 
 COMMANDS = {
@@ -21,6 +24,8 @@ COMMANDS = {
     "undo": undo,
     "summarize": summarize,
     "title": title,
+    "self-improve": self_improve,
+    "reload": reload,
 }
 
 
@@ -30,8 +35,7 @@ async def run(text: str, history: list) -> None:
     command = COMMANDS.get(name)
     if command is None:
         note("commands:")
-        for name, command in COMMANDS.items():
-            note(f"  /{name}  {command.DESCRIPTION}")
+        notes.columns([(f"/{name}", command.DESCRIPTION) for name, command in COMMANDS.items()])
         return
     result = command.run(history, args.strip())
     if inspect.isawaitable(result):

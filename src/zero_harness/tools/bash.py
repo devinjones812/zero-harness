@@ -20,20 +20,24 @@ SCHEMA = {
         "type": "object",
         "properties": {
             "command": {"type": "string"},
+            "purpose": {
+                "type": "string",
+                "description": "One short sentence for the user: what the command does. Shown when it needs approval.",
+            },
             "timeout": {"type": "integer", "description": f"Seconds. Default {DEFAULT_TIMEOUT}, max {MAX_TIMEOUT}."},
             "background": {"type": "boolean", "description": "Run without waiting. Default false."},
         },
-        "required": ["command"],
+        "required": ["command", "purpose"],
     },
 }
 
 
-async def run(command: str, timeout: int = DEFAULT_TIMEOUT, background: bool = False) -> str:
+async def run(command: str, purpose: str = "", timeout: int = DEFAULT_TIMEOUT, background: bool = False) -> str:
     """Run in its own process group so a timeout or Ctrl+C kills the command and every child it started."""
     if background:
         note("  ↳ runs in the background")
-    if not await approve_command(command):
-        return "user denied this command"
+    if denied := await approve_command(command, purpose):
+        return denied
     if background:
         job_id = await jobs.start(command)
         return f"started background job {job_id}. You will get a [background] message when it finishes."

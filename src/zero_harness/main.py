@@ -1,5 +1,7 @@
+import argparse
 import asyncio
 import os
+import shutil
 import sys
 import traceback
 
@@ -13,9 +15,11 @@ from zero_harness import (
     images,
     jobs,
     llm,
+    permissions,
     sessions,
 )
 from zero_harness.commands import registry as commands
+from zero_harness.commands import reload
 from zero_harness.tools import registry as tools
 from zero_harness.ui import logo, notes, user_input
 from zero_harness.ui.notes import note
@@ -25,23 +29,40 @@ turn: asyncio.Task | None = None
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(prog="zero", description="A coding agent for your terminal.")
+    parser.add_argument("message", nargs="?", help="first message to send")
+    parser.add_argument("-r", "--resume", nargs="?", const="", metavar="SESSION", help="pick a session, or give its file")
+    args = parser.parse_args()
     if not sys.stdin.isatty():
-        sys.exit("zero-harness needs an interactive terminal.")
-    asyncio.run(run())
+        sys.exit("zero needs an interactive terminal.")
+    asyncio.run(run(args))
+    if reload.requested:
+        restart()
 
 
-async def run() -> None:
+def restart() -> None:
+    """Replace this process with a new zero that resumes this session. exec skips atexit, so clean up first."""
+    jobs.cleanup()
+    shutil.rmtree(permissions.SCRATCH, ignore_errors=True)
+    resume = ["--resume", str(sessions.current)] if sessions.current.exists() else []
+    os.execv(sys.executable, [sys.executable, "-m", "zero_harness.main", *resume])
+
+
+async def run(args: argparse.Namespace) -> None:
     """Two tasks on one event loop: the input loop keeps the prompt on screen, the agent loop runs turns."""
     history = []
     logo.show()
-    note(f"zero-harness  {config.get('model')}  {os.getcwd()}")
+    note(f"zero  {config.get('model')}  {os.getcwd()}")
     note("type / for commands, Ctrl+C clears the input")
-    if "--resume" in sys.argv or "-r" in sys.argv:
-        await commands.run("/resume", history)
+    if args.resume is not None:
+        await commands.run(f"/resume {args.resume}".strip(), history)
     jobs.on_finish = lambda: inbox.put_nowait(None)
     user_input.setup(busy, list(commands.COMMANDS))
     with patch_stdout(raw=True):
         agent = asyncio.create_task(agent_loop(history))
+        if args.message:
+            notes.user(args.message)
+            inbox.put_nowait(args.message)
         await input_loop(history)
         agent.cancel()
 
@@ -70,6 +91,8 @@ async def input_loop(history: list) -> None:
             else:
                 await commands.run(text, history)
                 sessions.save(history)
+                if reload.requested:
+                    return
             continue
         notes.user(text)
         inbox.put_nowait(text)
@@ -127,6 +150,10 @@ def add_arrivals(history: list) -> None:
     while not inbox.empty():
         if text := inbox.get_nowait():
             history.append(images.user_message(text))
-    for notice in jobs.finished():
-        note(notice.splitlines()[0])
+    for short, notice in jobs.finished():
+        note(short)
         history.append({"role": "user", "content": notice})
+
+
+if __name__ == "__main__":
+    main()

@@ -37,8 +37,8 @@ async def run(path: str, old_text: str, new_text: str) -> str:
         content = content.replace(old_text, new_text)
 
     diff(old_text, new_text)
-    if not await approve_edit(path):
-        return "user denied this edit"
+    if denied := await approve_edit(path):
+        return denied
     checkpoints.record(path)
     file.parent.mkdir(parents=True, exist_ok=True)
     file.write_text(content)

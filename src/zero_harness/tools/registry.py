@@ -46,7 +46,7 @@ async def run(call: dict) -> dict:
 
 def summary(args: dict) -> str:
     """The first argument on one line, e.g. the command or path. Enough to see what the tool is doing."""
-    return str(next(iter(args.values()), "")).replace("\n", " ")
+    return str(next((value for key, value in args.items() if key != "purpose"), "")).replace("\n", " ")
 
 
 def cap(output: str) -> str:

@@ -87,8 +87,15 @@ def setup(busy, commands: list[str]) -> None:
         dots = "." * (int(time.monotonic() * 3) % 3 + 1)
         working = f"{notes.INDENT}working{dots}" if busy() and not question else ""
         stats = usage.status().strip()
-        gap = max(session.app.output.get_size().columns - len(working) - len(stats) - 1, 2)
-        return [("class:status", f"{working}{' ' * gap}{stats}")]
+        width = session.app.output.get_size().columns - 1
+        gap = max(width - len(working) - len(stats), 2)
+        return [("class:status", f"{working}{' ' * gap}{stats}"[:width])]
+
+    def redraw_on_resize() -> None:
+        """Clear the screen, then redraw. The terminal rewraps full-width rows when it narrows, so the default
+        erase, which moves up only as many rows as it drew, leaves old rows behind."""
+        session.app.renderer.clear()
+        session.app.invalidate()
 
     def prompt():
         if question:
@@ -107,6 +114,8 @@ def setup(busy, commands: list[str]) -> None:
         reserve_space_for_menu=0,
         color_depth=ColorDepth.TRUE_COLOR if os.environ.get("COLORTERM") in ("truecolor", "24bit") else None,
     )
+    # prompt_toolkit has no public resize hook; it reads this attribute when the prompt starts.
+    session.app._on_resize = redraw_on_resize
     input_window = session.app.layout.current_window
     input_window.style = "class:input"
     # Only the empty space at the top may stretch; that is what pins the box to the bottom of the terminal.

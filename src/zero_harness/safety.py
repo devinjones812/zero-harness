@@ -1,13 +1,15 @@
 import os
 import re
+from pathlib import Path
 
 from typesafe_sdk import Choice, TypeSafeClient
 
-AUTO_APPROVE_AT = 0.9
+AUTO_APPROVE_AT = 0.75
 
 ALWAYS_ASK = re.compile(
     r"\brm\s+-\w*r\w*\s+(/|~|\$HOME|\.\.)|\bsudo\b|\bgit\s+push\b.*(--force|-f\b)"
     r"|\bgit\s+reset\s+--hard|\bgit\s+clean\b|\bmkfs|\bdd\s+if=|\|\s*(ba|z)?sh\b"
+    r"|\bdo\s+script\b.*\bin\s+(front|selected|window|tab)"
 )
 
 QUESTION = Choice(
@@ -21,7 +23,8 @@ QUESTION = Choice(
             "Routine and low consequence: reads files or system info, searches, lists, runs tests, "
             "linters, or builds, git status/diff/log/add/commit, creates or edits files inside the "
             "working directory, deletes build output, caches, or temporary files inside the working "
-            "directory (node_modules, dist, build, __pycache__, *.log), installs dependencies into the project."
+            "directory (node_modules, dist, build, __pycache__, *.log), installs dependencies into the project, "
+            "creates, runs, or deletes files in the scratch folder."
         ),
         "caution": (
             "Could cause harm that is hard to undo: deletes source files or data that cannot be "
@@ -35,11 +38,11 @@ QUESTION = Choice(
 )
 
 
-def review(command: str) -> tuple[bool, str]:
+def review(command: str, scratch: Path) -> tuple[bool, str]:
     """Return (run without asking, reason). Any failure means ask."""
     if ALWAYS_ASK.search(command):
         return False, "matches a high-risk pattern"
-    state = f"Working directory: {os.getcwd()}\nCommand: {command}"
+    state = f"Working directory: {os.getcwd()}\nScratch folder: {scratch}\nCommand: {command}"
     try:
         with TypeSafeClient() as client:
             answer = client.system_one(state, {"risk": QUESTION}).choices["risk"]

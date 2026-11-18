@@ -3,9 +3,10 @@ import io
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.padding import Padding
+from rich.table import Table
 from rich.text import Text
 
-console = Console()
+console = Console(record=True)  # /self-improve exports what the user saw
 
 ACCENT = "#c8b4ff"
 BACKGROUND = "#262626"
@@ -19,6 +20,16 @@ after_tools = False
 
 def note(text: str, style: str = "dim") -> None:
     console.print(Padding.indent(Text(text, style=style), MARGIN), highlight=False)
+
+
+def columns(rows: list[tuple[str, str]]) -> None:
+    """Two dim columns; long text in the second column wraps under itself."""
+    grid = Table.grid(padding=(0, 2))
+    grid.add_column(no_wrap=True)
+    grid.add_column()
+    for row in rows:
+        grid.add_row(*row)
+    console.print(Padding.indent(grid, MARGIN + 2), style="dim")
 
 
 def user(text: str) -> None:
@@ -44,6 +55,11 @@ def section() -> None:
     if after_tools:
         console.print()
     after_tools = False
+
+
+def answer(text: str) -> None:
+    """Print markdown to scrollback."""
+    console.print(Text.from_ansi(markdown(text)), soft_wrap=True)
 
 
 def markdown(text: str, max_lines: int | None = None) -> str:

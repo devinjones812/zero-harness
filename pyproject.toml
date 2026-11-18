@@ -19,7 +19,6 @@ dependencies = [
 ]
 
 [project.scripts]
-zero-harness = "zero_harness.main:main"
 zero = "zero_harness.main:main"
 
 [build-system]
