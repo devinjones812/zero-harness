@@ -21,9 +21,9 @@ and fix it.
 User's note: {note}
 
 Files:
-- {folder}/screen.txt: everything the user saw in the terminal. Most issues show up here, from the user's view.
-  It probably has what you need. Start here.
-- {folder}/session.json: the session as the model saw it: messages, full tool calls, and tool results. It is large.
+- {folder}/screen.txt: recorded terminal output since the previous self-improve capture, or since the session
+  started if this is the first. Start here.
+- {folder}/session.json: current model history for the whole session, including messages, tool calls, and tool results.
   Read parts of it only when screen.txt is not enough, e.g. to see a full command or what the model received.
 
 You are in zero's repo. Investigate the code to find the cause of each issue. If it helps, you can search the
@@ -42,10 +42,10 @@ Steps:
   git reset --hard {checkpoint}
 """
 
-EARLIER = """Earlier self-improve runs in this session. Each shows in screen.txt as a "self-improve ran here" line.
+EARLIER = """Earlier self-improve captures in this session:
 {runs}
-Issues above the last of those lines were already handled. Focus on what came after it, and use the earlier part
-as context. `git diff {last} {checkpoint}` shows what changed since the last run.
+Focus on output since the last capture. Use earlier folders only for context; a capture does not mean its issues
+were fixed. `git diff {last} {checkpoint}` shows what changed since the last capture.
 
 """
 
@@ -62,14 +62,15 @@ async def run(history: list, args: str) -> None:
         return
     folder = config.HOME / "self-improve" / f"{datetime.now():{sessions.STAMP}}"
     folder.mkdir(parents=True)
-    screen = notes.console.export_text(clear=False).splitlines()
-    (folder / "screen.txt").write_text("\n".join(line.rstrip() for line in screen) + "\n")
+    screen = sessions.screen().splitlines()
+    (folder / "screen.txt").write_text("".join(f"{line.rstrip()}\n" for line in screen))
     earlier = ""
     if sessions.improved:
         runs = "\n".join(f"- checkpoint {run['checkpoint']}, files in {run['folder']}" for run in sessions.improved)
         earlier = EARLIER.format(runs=runs, last=sessions.improved[-1]["checkpoint"], checkpoint=checkpoint)
     sessions.improved.append({"at": len(history), "folder": str(folder), "checkpoint": checkpoint})
     marker(checkpoint)
+    sessions.clear_screen()
     sessions.save(history)
     shutil.copy(sessions.current, folder / "session.json")
     brief = BRIEF.format(note=args or "(none)", folder=folder, checkpoint=checkpoint, earlier=earlier)

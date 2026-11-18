@@ -28,6 +28,7 @@ async def run(history: list, args: str) -> None:
     if path:
         history[:] = sessions.load(path)
         replay(history)
+        notes.console.export_text()  # Discard the replay; the loaded session has its own capture buffer.
         note(f"resumed: {sessions.title}")
 
 
