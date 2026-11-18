@@ -3,7 +3,7 @@ from zero_harness.ui.notes import note
 
 DESCRIPTION = "Set reasoning effort: /effort low|medium|high|xhigh|max (saved)."
 
-LEVELS = ["low", "medium", "high", "xhigh", "max"]
+LEVELS = OPTIONS = ["low", "medium", "high", "xhigh", "max"]
 
 
 def run(history: list, args: str) -> None:

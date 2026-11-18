@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import traceback
+from pathlib import Path
 
 from prompt_toolkit.patch_stdout import patch_stdout
 
@@ -32,6 +33,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="zero", description="A coding agent for your terminal.")
     parser.add_argument("message", nargs="?", help="first message to send")
     parser.add_argument("-r", "--resume", nargs="?", const="", metavar="SESSION", help="pick a session, or give its file")
+    parser.add_argument("--reloaded", metavar="SESSION", help=argparse.SUPPRESS)  # set by /reload
     args = parser.parse_args()
     if not sys.stdin.isatty():
         sys.exit("zero needs an interactive terminal.")
@@ -41,23 +43,30 @@ def main() -> None:
 
 
 def restart() -> None:
-    """Replace this process with a new zero that resumes this session. exec skips atexit, so clean up first."""
+    """Replace this process with a new zero that continues this session in the same window.
+
+    exec skips atexit, so clean up first.
+    """
     jobs.cleanup()
     shutil.rmtree(permissions.SCRATCH, ignore_errors=True)
-    resume = ["--resume", str(sessions.current)] if sessions.current.exists() else []
-    os.execv(sys.executable, [sys.executable, "-m", "zero_harness.main", *resume])
+    session = str(sessions.current) if sessions.current.exists() else ""
+    os.execv(sys.executable, [sys.executable, "-m", "zero_harness.main", "--reloaded", session])
 
 
 async def run(args: argparse.Namespace) -> None:
     """Two tasks on one event loop: the input loop keeps the prompt on screen, the agent loop runs turns."""
     history = []
-    logo.show()
-    note(f"zero  {config.get('model')}  {os.getcwd()}")
-    note("type / for commands, Ctrl+C clears the input")
+    if args.reloaded:
+        # The window still shows the conversation, so load it without printing anything.
+        history[:] = sessions.load(Path(args.reloaded))
+    elif args.reloaded is None:
+        logo.show()
+        note(f"zero  {config.get('model')}  {os.getcwd()}")
+        note("type / for commands, Ctrl+C clears the input")
     if args.resume is not None:
         await commands.run(f"/resume {args.resume}".strip(), history)
     jobs.on_finish = lambda: inbox.put_nowait(None)
-    user_input.setup(busy, list(commands.COMMANDS))
+    user_input.setup(busy, commands.options())
     with patch_stdout(raw=True):
         agent = asyncio.create_task(agent_loop(history))
         if args.message:

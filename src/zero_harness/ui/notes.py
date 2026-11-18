@@ -7,7 +7,6 @@ from rich.table import Table
 from rich.text import Text
 
 console = Console(record=True)  # /self-improve exports what the user saw
-
 ACCENT = "#c8b4ff"
 BACKGROUND = "#262626"
 USER_STYLE = f"{ACCENT} on {BACKGROUND}"

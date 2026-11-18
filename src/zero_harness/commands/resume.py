@@ -42,7 +42,7 @@ def replay(history: list) -> None:
         if item.get("role") == "user":
             text = user_text(item["content"])
             if text.startswith(("[background]", "(I undid")):
-                job = re.match(r"(\[background\] job \d+) `.*?`: (exited with code -?\d+)(?:\n|$)", text, re.S)
+                job = re.match(r"(\[background\] job \d+) `.*?`: (exited with code -?\d+)(?:\n|$)", text, re.DOTALL)
                 note(f"{job[1]} {job[2]}" if job else text.splitlines()[0])
             elif text.startswith("Summary of the conversation so far"):
                 note("[summary] earlier messages were summarized")

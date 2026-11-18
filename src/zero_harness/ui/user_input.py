@@ -5,7 +5,7 @@ import time
 from bisect import bisect_left
 
 from prompt_toolkit import PromptSession
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.filters import Condition, to_filter
 from prompt_toolkit.formatted_text import ANSI, fragment_list_to_text
 from prompt_toolkit.history import FileHistory
@@ -112,12 +112,36 @@ class WordWrap(Processor):
         return Transformation(out, lambda i: positions[min(i, len(text))], lambda i: bisect_left(positions, i))
 
 
-def setup(busy, commands: list[str]) -> None:
+class CommandCompleter(Completer):
+    """Complete /command names, then the command's options after a space."""
+
+    def __init__(self, commands: dict[str, list[str]]):
+        self.commands = commands
+
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        if not is_command(text):
+            return
+        name, space, typed = text[1:].partition(" ")
+        if not space:
+            words, typed = [f"/{name}" for name in self.commands], text
+        elif " " not in typed:
+            words = self.commands.get(name, [])
+        else:
+            return
+        for word in words:
+            if word.startswith(typed):
+                yield Completion(word, start_position=-len(typed))
+
+
+def setup(busy, commands: dict[str, list[str]]) -> None:
     """Create the prompt, pinned to the bottom of the terminal. Top to bottom:
 
     the answer being streamed (right under earlier output, so it reads top to bottom and finished blocks
     land where they streamed), empty space, one blank row that stays when the screen is full,
     working… and the stats, a rule, the input, a rule.
+
+    `commands` maps each /command name to the options it takes, for Tab completion.
     """
     global session
 
@@ -166,7 +190,7 @@ def setup(busy, commands: list[str]) -> None:
         history=FileHistory(str(sessions.DIR / "prompt_history")),
         key_bindings=bindings,
         input_processors=[WordWrap(prompt)],
-        completer=WordCompleter([f"/{name}" for name in commands], sentence=True),
+        completer=CommandCompleter(commands),
         style=STYLE,
         erase_when_done=True,
         tempfile_suffix=".md",

@@ -29,6 +29,11 @@ COMMANDS = {
 }
 
 
+def options() -> dict[str, list[str]]:
+    """Each command's name and the options it takes, for Tab completion."""
+    return {name: getattr(command, "OPTIONS", []) for name, command in COMMANDS.items()}
+
+
 def anytime(text: str) -> bool:
     """True if the /command may run while the agent works."""
     command = COMMANDS.get(text[1:].partition(" ")[0])

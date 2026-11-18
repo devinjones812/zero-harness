@@ -5,7 +5,7 @@ DESCRIPTION = (
     "Approval mode. ask: ask before every command and edit. auto: Jev approves routine commands. "
     "auto-max: everything runs except known destructive commands. /mode <name>; /mode alone cycles."
 )
-MODES = ["ask", "auto", "auto-max"]
+MODES = OPTIONS = ["ask", "auto", "auto-max"]
 
 
 def run(history: list, args: str) -> None:
