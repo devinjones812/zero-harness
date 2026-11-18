@@ -12,5 +12,4 @@ wheels/
 .env
 
 # Private notes
-docs/*
-!docs/demo.gif
+docs/

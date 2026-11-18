@@ -3,7 +3,7 @@
 A minimal terminal agent harness I built around OpenAI models. 
 Designed for efficiency and reliability. <2,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? <kbd>**ZERO**</kbd>. **It can also fix itself.**
 
-![zero fixing a failing test](docs/demo.gif)
+![zero fixing a failing test](assets/demo.gif)
 
 ## Setup
 
