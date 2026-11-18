@@ -1,34 +1,37 @@
-from zero_harness.errors import StreamError
 from zero_harness.ui import notes, user_input
 
 
-async def print_stream(stream):
-    """Show reasoning summaries and the answer word by word in the live area, moving finished parts to scrollback.
+class Live:
+    """Show reasoning and the answer word by word in the live area, moving finished parts to scrollback.
 
-    Returns the completed response.
+    API modules call think(), end_thought(), and write() as text streams in.
     """
-    text, printed, thought = "", 0, ""
-    async with stream:
-        try:
-            async for event in stream:
-                if event.type == "response.reasoning_summary_text.delta":
-                    thought += event.delta
-                    user_input.show_live(thought, notes.THOUGHT_STYLE)
-                elif event.type == "response.reasoning_summary_part.done":
-                    if thought.strip():
-                        notes.thought(thought)
-                    thought = ""
-                    user_input.show_live("")
-                elif event.type == "response.output_text.delta":
-                    text += event.delta
-                    printed = commit(text, printed, final=False)
-                    user_input.show_live(text[printed:])
-                elif event.type == "response.completed":
-                    commit(text, printed, final=True)
-                    return event.response
-        finally:
-            user_input.show_live("")
-    raise StreamError("stream ended without a completed response")
+
+    def __init__(self):
+        self.text, self.printed, self.thought = "", 0, ""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, error_type, *_):
+        if error_type is None:
+            commit(self.text, self.printed, final=True)
+        user_input.show_live("")
+
+    def think(self, delta: str) -> None:
+        self.thought += delta
+        user_input.show_live(self.thought, notes.THOUGHT_STYLE)
+
+    def end_thought(self) -> None:
+        if self.thought.strip():
+            notes.thought(self.thought)
+        self.thought = ""
+        user_input.show_live("")
+
+    def write(self, delta: str) -> None:
+        self.text += delta
+        self.printed = commit(self.text, self.printed, final=False)
+        user_input.show_live(self.text[self.printed :])
 
 
 def commit(text: str, printed: int, final: bool) -> int:

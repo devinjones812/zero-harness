@@ -1,3 +1,4 @@
+import anthropic
 import openai
 
 from zero_harness.ui.notes import note
@@ -7,7 +8,7 @@ class StreamError(Exception):
     """The response stream ended without a completed response."""
 
 
-RECOVERABLE = (openai.APIError, StreamError)
+RECOVERABLE = (openai.APIError, anthropic.APIError, StreamError)
 
 INTERRUPTED = "interrupted: this tool did not run or did not finish."
 

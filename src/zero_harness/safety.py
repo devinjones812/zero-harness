@@ -8,6 +8,8 @@ from typesafe_sdk import Choice, TypeSafeClient
 from zero_harness import config
 
 AUTO_APPROVE_AT = 0.75
+# The only model OpenAI's Decisions API serves. Reviews never use the user's chat model: it costs too much per command.
+DECISIONS_MODEL = "gpt-6-luna"
 
 ALWAYS_ASK = re.compile(
     r"\brm\s+-\w*r\w*\s+(/|~|\$HOME|\.\.)|\bsudo\b|\bgit\s+push\b.*(--force|-f\b)"
@@ -56,7 +58,7 @@ def _jev_clear(state: str) -> float:
 def _openai_clear(state: str) -> float | None:
     with OpenAI(timeout=10, max_retries=0) as client:
         decision = client.decisions.create(
-            model="gpt-6-luna",
+            model=DECISIONS_MODEL,
             input=state,
             questions=[{
                 "type": "predicate",
@@ -77,10 +79,9 @@ def review(command: str, scratch: Path) -> tuple[bool, str]:
     """Review an auto-mode command. Local high-risk matches and reviewer failures require confirmation."""
     if ALWAYS_ASK.search(command):
         return False, "matches a high-risk pattern"
-    try:
-        provider = config.provider("approval_provider")
-    except ValueError as error:
-        return False, str(error)
+    provider = config.reviewer()
+    if provider is None:
+        return False, "no reviewer: auto-review needs OPENAI_API_KEY or TYPESAFE_API_KEY"
     label, assess = ("Jev", _jev_clear) if provider == "jev" else ("OpenAI Decisions", _openai_clear)
     state = f"Working directory: {os.getcwd()}\nScratch folder: {scratch}\nCommand: {command}"
     try:

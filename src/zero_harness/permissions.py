@@ -37,7 +37,7 @@ async def ask(**request) -> str | None:
 
 
 async def approve_edit(path: str) -> str | None:
-    """auto allows edits inside the working directory or scratch folder, except secrets and git internals.
+    """auto-review allows edits inside the working directory or scratch folder, except secrets and git internals.
 
     auto-max allows every edit.
     """
@@ -55,7 +55,7 @@ async def approve_edit(path: str) -> str | None:
 
 
 def edit_risk(path: str) -> str | None:
-    """Why an edit to `path` needs the user, or None if auto mode may allow it."""
+    """Why an edit to `path` needs the user, or None if auto-review may allow it."""
     target, root = Path(path).resolve(), Path.cwd().resolve()
     if target.is_relative_to(SCRATCH):
         return None
@@ -68,7 +68,7 @@ def edit_risk(path: str) -> str | None:
 
 
 async def approve_command(command: str, purpose: str) -> str | None:
-    """Apply the approval mode; only auto consults the configured reviewer.
+    """Apply the approval mode; only auto-review consults the reviewer.
 
     Return None to allow execution, or the user's denial for the model.
     """
@@ -79,7 +79,7 @@ async def approve_command(command: str, purpose: str) -> str | None:
             return None
         reason = f"destructive: {match.group().strip()}"
         note(f"  ↳ asking: {reason}", style=notes.CAUTION)
-    elif mode == "auto":
+    elif mode == "auto-review":
         run, reason = await asyncio.to_thread(safety.review, command, SCRATCH)
         if run:
             note(f"  ↳ auto-approved: {reason}")

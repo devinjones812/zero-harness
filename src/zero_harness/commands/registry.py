@@ -1,10 +1,10 @@
 import inspect
 
 from zero_harness.commands import (
-    effort,
     mode,
     model,
     new,
+    reasoning,
     reload,
     resume,
     self_improve,
@@ -19,7 +19,7 @@ COMMANDS = {
     "new": new,
     "resume": resume,
     "model": model,
-    "effort": effort,
+    "reasoning": reasoning,
     "mode": mode,
     "undo": undo,
     "summarize": summarize,
@@ -29,9 +29,16 @@ COMMANDS = {
 }
 
 
-def options() -> dict[str, list[str]]:
-    """Each command's name and the options it takes, for Tab completion."""
-    return {name: getattr(command, "OPTIONS", []) for name, command in COMMANDS.items()}
+def options() -> dict:
+    """Each command's name and a function from the words typed after it to the next word's options, for Tab completion.
+
+    Commands define complete(words), or OPTIONS for a single fixed word.
+    """
+    return {name: getattr(command, "complete", fixed(command)) for name, command in COMMANDS.items()}
+
+
+def fixed(command):
+    return lambda words: [] if words else getattr(command, "OPTIONS", [])
 
 
 def anytime(text: str) -> bool:

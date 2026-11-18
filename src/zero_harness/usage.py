@@ -1,20 +1,7 @@
-import re
-
 from zero_harness import config
+from zero_harness.models import listing
+from zero_harness.models.reply import Reply, Usage
 
-# Standard tier, USD per 1M tokens: (input, cached input, output).
-# https://developers.openai.com/api/docs/pricing (Nov 2026)
-PRICES = {
-    "gpt-6.2-astra": (8.00, 0.40, 40.00),
-    "gpt-6.2-sol": (2.00, 0.10, 10.00),
-    "gpt-6.1-sol": (2.00, 0.10, 10.00),
-    "gpt-6.1-terra": (1.00, 0.05, 5.00),
-    "gpt-6-astra": (10.00, 1.00, 50.00),
-    "gpt-6-sol": (2.00, 0.20, 10.00),
-    "gpt-6-luna": (0.10, 0.01, 0.50),
-}
-CONTEXT_WINDOW = 1_050_000
-LONG_CONTEXT = 272_000
 WHEEL = "○◔◑◕●"
 
 cost = 0.0
@@ -22,35 +9,56 @@ priced = True
 input_tokens: int | None = 0
 
 
-def record(response, conversation: bool = True) -> None:
-    """Add a response's cost to the session. Conversation calls also set the current context size."""
+def record(reply: Reply, conversation: bool = True) -> None:
+    """Add a reply's cost to the session. Conversation calls also set the current context size."""
     global cost, priced, input_tokens
-    usage, model = response.usage, response.model
     if conversation:
-        input_tokens = usage.input_tokens
-    price = PRICES.get(re.sub(r"-\d{4}-\d{2}-\d{2}$", "", model))
-    if price is None:
+        input_tokens = reply.usage.input_tokens
+    rates = listing.info(config.get("model")).get("cost")
+    if rates is None:
         priced = False
         return
-    long = usage.input_tokens > LONG_CONTEXT
-    cached = usage.input_tokens_details.cached_tokens
-    cost += (
-        (usage.input_tokens - cached) * price[0] * (2 if long else 1)
-        + cached * price[1] * (2 if long else 1)
-        # Output tokens include reasoning tokens at every effort level.
-        + usage.output_tokens * price[2] * (1.5 if long else 1)
+    cost += dollars(reply.usage, rates)
+
+
+def dollars(usage: Usage, rates: dict) -> float:
+    """The cost of one call. `rates` is a models.dev cost entry: USD per 1M tokens, with optional tiers."""
+    # A tier replaces the base rates for requests with more input than its size, e.g. long-context pricing.
+    for tier in rates.get("tiers", []):
+        if tier["tier"]["type"] == "context" and usage.input_tokens > tier["tier"]["size"]:
+            rates = rates | tier
+    read = rates.get("cache_read", rates["input"])
+    write = rates.get("cache_write", rates["input"])
+    uncached = usage.input_tokens - usage.cached_tokens - usage.cache_write_tokens
+    return (
+        uncached * rates["input"]
+        + usage.cached_tokens * read
+        + usage.cache_write_tokens * write
+        # Output tokens include reasoning tokens.
+        + usage.output_tokens * rates["output"]
     ) / 1_000_000
 
 
 def status() -> str:
-    """One line: context wheel and percent, tokens, session cost, model and effort, auto mode."""
+    """One line: context wheel and percent, tokens, session cost, model and reasoning, approval mode."""
+    model = config.get("model")
+    window = listing.info(model).get("context")
     if input_tokens is None:
         context = "○ context unmeasured"
+    elif window is None:
+        context = f"{short(input_tokens)} context"
     else:
-        used = input_tokens / CONTEXT_WINDOW
+        used = input_tokens / window
         wheel = WHEEL[min(round(used * 4), 4)]
-        tokens = f"{input_tokens / 1000:.1f}k" if input_tokens >= 1000 else str(input_tokens)
-        context = f"{wheel} {used:.0%} context  {tokens}/1M"
-    price = f"${cost:.2f}" if priced else f"${cost:.2f}+ (unknown price for {config.get('model')})"
+        context = f"{wheel} {used:.0%} context  {short(input_tokens)}/{short(window)}"
+    price = f"${cost:.2f}" if priced else f"${cost:.2f}+ (unknown price for {model})"
+    reasoning = f" {config.get('effort')}" if listing.efforts(model) else ""
     auto = "" if config.get("mode") == "ask" else f"  {config.get('mode')}"
-    return f" {context}  {price}  {config.get('model')} {config.get('effort')}{auto}"
+    return f" {context}  {price}  {model}{reasoning}{auto}"
+
+
+def short(tokens: int) -> str:
+    """1234 -> 1.2k, 1000000 -> 1M."""
+    if tokens >= 1_000_000:
+        return f"{tokens / 1_000_000:.3g}M"
+    return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)

@@ -1,9 +1,8 @@
-from zero_harness import config
-from zero_harness.providers import openai_web, parallel_web
+from zero_harness.web import backend
 
 SCHEMA = {
     "type": "function",
-    "name": "parallel_search" if config.get("search_provider") == "parallel" else "openai_search",
+    "name": "web_search",
     "description": "Search the web. Returns findings and source URLs as JSON.",
     "parameters": {
         "type": "object",
@@ -14,6 +13,4 @@ SCHEMA = {
 
 
 def run(query: str) -> str:
-    if config.provider("search_provider") == "openai":
-        return openai_web.search(query)
-    return parallel_web.search(query)
+    return backend.choose().search(query)

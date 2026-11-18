@@ -114,20 +114,21 @@ class WordWrap(Processor):
 
 
 class CommandCompleter(Completer):
-    """Complete /command names, then the command's options after a space."""
+    """Complete /command names, then each word after them with the command's complete(words)."""
 
-    def __init__(self, commands: dict[str, list[str]]):
+    def __init__(self, commands: dict):
         self.commands = commands
 
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
         if not is_command(text):
             return
-        name, space, typed = text[1:].partition(" ")
+        name, space, rest = text[1:].partition(" ")
         if not space:
             words, typed = [f"/{name}" for name in self.commands], text
-        elif " " not in typed:
-            words = self.commands.get(name, [])
+        elif name in self.commands:
+            *before, typed = rest.split(" ")
+            words = self.commands[name](before)
         else:
             return
         for word in words:
@@ -135,14 +136,14 @@ class CommandCompleter(Completer):
                 yield Completion(word, start_position=-len(typed))
 
 
-def setup(busy, commands: dict[str, list[str]]) -> None:
+def setup(busy, commands: dict) -> None:
     """Create the prompt, pinned to the bottom of the terminal. Top to bottom:
 
     the answer being streamed (right under earlier output, so it reads top to bottom and finished blocks
     land where they streamed), empty space, one blank row that stays when the screen is full,
     working… and the stats, a rule, the input, a rule.
 
-    `commands` maps each /command name to the options it takes, for Tab completion.
+    `commands` maps each /command name to complete(words), for Tab completion.
     """
     global session
 

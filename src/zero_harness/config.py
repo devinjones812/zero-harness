@@ -2,39 +2,42 @@ import json
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 HOME = Path.home() / ".zero"
 PATH = HOME / "config.json"
 
+load_dotenv(HOME / ".env")
+
 DEFAULTS = {
-    "model": "gpt-6.2-sol",
+    "model": None,  # the user picks one on first run
     "effort": "medium",
     "max_tool_rounds": 50,
-    "mode": "auto",
-    "search_provider": "openai",
-    "approval_provider": "openai",
+    "providers": {},
 }
-OPTIONAL_PROVIDERS = {
-    "search_provider": ("parallel", "PARALLEL_API_KEY"),
-    "approval_provider": ("jev", "TYPESAFE_API_KEY"),
-}
+# Command reviewers for auto-review mode and the keys they need, in default order.
+REVIEWERS = {"openai": "OPENAI_API_KEY", "jev": "TYPESAFE_API_KEY"}
 
 saved = json.loads(PATH.read_text()) if PATH.exists() else {}
+if saved.get("mode") == "auto":  # renamed
+    saved["mode"] = "auto-review"
 
 
 def get(key: str):
     """Return the saved value, or the default if the user never set it."""
-    return saved.get(key, DEFAULTS[key])
+    if key in saved:
+        return saved[key]
+    if key == "mode":
+        return "auto-review" if reviewer() else "ask"
+    return DEFAULTS[key]
 
 
-def provider(key: str) -> str:
-    """Return the configured provider, checking credentials for explicit overrides."""
-    alternate, env = OPTIONAL_PROVIDERS[key]
-    value = get(key)
-    if value not in ("openai", alternate):
-        raise ValueError(f"Set {key} to openai or {alternate} in {PATH}.")
-    if value == alternate and not os.getenv(env):
-        raise ValueError(f"Set {env} in {HOME / '.env'} to use {alternate}.")
-    return value
+def reviewer() -> str | None:
+    """The command reviewer for auto-review: "approval_provider" if its key is set, else the first with a key."""
+    chosen = saved.get("approval_provider")
+    if chosen in REVIEWERS:
+        return chosen if os.getenv(REVIEWERS[chosen]) else None
+    return next((name for name, env in REVIEWERS.items() if os.getenv(env)), None)
 
 
 def update(key: str, value) -> None:
