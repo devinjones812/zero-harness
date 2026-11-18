@@ -13,4 +13,4 @@ wheels/
 
 # Private notes
 docs/*
-!docs/screenshot.png
+!docs/demo.gif
