@@ -4,6 +4,7 @@ from pathlib import Path
 import questionary
 
 from zero_harness import sessions
+from zero_harness.commands import self_improve
 from zero_harness.tools.registry import summary
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
@@ -29,8 +30,13 @@ async def run(history: list, args: str) -> None:
 
 
 def replay(history: list) -> None:
-    """Print a loaded conversation the way it looked live: messages, tool lines, and answers."""
-    for item in history:
+    """Print a loaded conversation the way it looked live: messages, tool lines, answers, and self-improve lines."""
+    runs = {}
+    for run in sessions.improved:
+        runs.setdefault(min(run["at"], len(history)), []).append(run["checkpoint"])
+    for index, item in enumerate(history):
+        for checkpoint in runs.get(index, []):
+            self_improve.marker(checkpoint)
         if item.get("role") == "user":
             text = user_text(item["content"])
             if text.startswith(("[background]", "(I undid")):
@@ -46,6 +52,8 @@ def replay(history: list) -> None:
             if text.strip():
                 notes.section()
                 notes.answer(text)
+    for checkpoint in runs.get(len(history), []):
+        self_improve.marker(checkpoint)
 
 
 def user_text(content) -> str:

@@ -30,7 +30,7 @@ To hack on it, clone the repo and run `uv tool install --editable .` instead. Co
 
 Run `zero` in any directory, or `zero "message"` to send a first message. `zero -r` resumes a session. Type while the agent works; it reads your message before its next step. Drag in an image to attach it. Ctrl+C clears the input, stops a turn, or quits. Ctrl+E opens the input in `$EDITOR` for long prompts; save and quit to bring the text back.
 
-Auto mode (on by default) lets Jev approve routine shell commands. Risky ones still ask. At `allow? [y/N]`, type anything other than y or n to deny and tell the agent why. Temporary files go in a scratch folder that zero deletes on exit.
+Auto mode (on by default) lets Jev approve routine shell commands. Risky ones still ask. At `allow? [y/N]`, type anything other than y or n to deny and tell the agent why. Every answer goes to `~/.zero/approvals.jsonl`, so you can see what Jev asks about too often. Temporary files go in a scratch folder that zero deletes on exit.
 
 Commands: `/new`, `/resume`, `/model`, `/effort`, `/auto`, `/undo`, `/summarize`, `/title`, `/self-improve`, `/reload`.
 

@@ -1,11 +1,13 @@
 import asyncio
 import os
+import re
 import time
+from bisect import bisect_left
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.filters import Condition, to_filter
-from prompt_toolkit.formatted_text import ANSI
+from prompt_toolkit.formatted_text import ANSI, fragment_list_to_text
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.layout import (
@@ -18,8 +20,11 @@ from prompt_toolkit.layout import (
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.menus import CompletionsMenu
+from prompt_toolkit.layout.processors import Processor, Transformation
+from prompt_toolkit.layout.utils import explode_text_fragments
 from prompt_toolkit.output import ColorDepth
 from prompt_toolkit.styles import Style
+from prompt_toolkit.utils import get_cwidth
 
 from zero_harness import sessions, usage
 from zero_harness.ui import notes
@@ -78,6 +83,35 @@ def is_command(text: str) -> bool:
     return text.startswith("/") and "\n" not in text
 
 
+class WordWrap(Processor):
+    """Wrap the input between words. prompt_toolkit wraps mid-word, so pad the row when the next word won't fit."""
+
+    def __init__(self, prompt):
+        self.prompt = prompt
+
+    def apply_transformation(self, ti):
+        chars = explode_text_fragments(ti.fragments)
+        text = fragment_list_to_text(chars)
+        # Only the first row has the prompt in front of it.
+        column = get_cwidth(fragment_list_to_text(self.prompt())) if ti.lineno == 0 else 0
+        out, positions, display = [], [], 0  # positions[i]: where source character i lands on screen
+        for word in re.finditer(r"\S+|\s+", text):
+            size = get_cwidth(word.group())
+            if column and not word.group().isspace() and column + size > ti.width >= size:
+                out.append(("", " " * (ti.width - column)))
+                display += ti.width - column
+                column = 0
+            for i in range(word.start(), word.end()):
+                char_width = get_cwidth(text[i])
+                column = (0 if column + char_width > ti.width else column) + char_width
+                column %= ti.width
+                positions.append(display)
+                out.append(chars[i])
+                display += 1
+        positions.append(display)
+        return Transformation(out, lambda i: positions[min(i, len(text))], lambda i: bisect_left(positions, i))
+
+
 def setup(busy, commands: list[str]) -> None:
     """Create the prompt, pinned to the bottom of the terminal. Top to bottom:
 
@@ -131,6 +165,7 @@ def setup(busy, commands: list[str]) -> None:
         prompt,
         history=FileHistory(str(sessions.DIR / "prompt_history")),
         key_bindings=bindings,
+        input_processors=[WordWrap(prompt)],
         completer=WordCompleter([f"/{name}" for name in commands], sentence=True),
         style=STYLE,
         erase_when_done=True,

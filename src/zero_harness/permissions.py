@@ -1,7 +1,9 @@
 import asyncio
 import atexit
+import json
 import shutil
 import tempfile
+from datetime import datetime
 from fnmatch import fnmatch
 from pathlib import Path
 
@@ -10,14 +12,24 @@ from zero_harness.ui import notes, user_input
 from zero_harness.ui.notes import note
 
 PROTECTED = [".env", ".env.*", ".git", ".ssh", ".aws", ".gnupg", ".netrc", ".npmrc", ".pypirc", "*.pem", "*.key"]
+APPROVALS = config.HOME / "approvals.jsonl"
 SCRATCH = Path(tempfile.mkdtemp(prefix="zero-scratch-")).resolve()
 atexit.register(shutil.rmtree, SCRATCH, ignore_errors=True)
 
 
-async def ask() -> str | None:
-    """Ask the user. Return None if allowed, else the result for the model, with any text the user typed."""
+async def ask(**request) -> str | None:
+    """Ask the user and log the answer with `request`, to tune what auto mode allows.
+
+    Return None if allowed, else the result for the model, with any text the user typed.
+    """
     reply = (await user_input.ask("allow? [y/N]")).strip()
-    if reply.lower() in ("y", "yes"):
+    allowed = reply.lower() in ("y", "yes")
+    entry = {"time": f"{datetime.now():%Y-%m-%d %H:%M:%S}", "cwd": str(Path.cwd()), **request, "allowed": allowed}
+    if not allowed and reply:
+        entry["reply"] = reply
+    with APPROVALS.open("a") as log:
+        log.write(json.dumps(entry) + "\n")
+    if allowed:
         return None
     if reply.lower() in ("", "n", "no"):
         return "user denied this"
@@ -27,10 +39,10 @@ async def ask() -> str | None:
 async def approve_edit(path: str) -> str | None:
     """In auto mode, allow edits inside the working directory or scratch folder, except secrets and git internals."""
     if not config.get("auto"):
-        return await ask()
+        return await ask(edit=path, reason="auto mode off")
     if reason := edit_risk(path):
         note(f"  ↳ asking: {reason}", style=notes.CAUTION)
-        return await ask()
+        return await ask(edit=path, reason=reason)
     note("  ↳ auto-approved")
     return None
 
@@ -50,6 +62,7 @@ def edit_risk(path: str) -> str | None:
 
 async def approve_command(command: str, purpose: str) -> str | None:
     """In auto mode, run commands Jev rates clear without asking. Everything else asks."""
+    reason = "auto mode off"
     if config.get("auto"):
         run, reason = await asyncio.to_thread(safety.review, command, SCRATCH)
         if run:
@@ -58,4 +71,4 @@ async def approve_command(command: str, purpose: str) -> str | None:
         note(f"  ↳ asking: {reason}", style=notes.CAUTION)
     if purpose:
         note(f"  ↳ {purpose}", style=notes.CAUTION)
-    return await ask()
+    return await ask(command=command, purpose=purpose, reason=reason)

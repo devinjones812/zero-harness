@@ -10,28 +10,30 @@ STAMP = "%Y-%m-%d_%H-%M-%S"
 
 current = DIR / f"{datetime.now():{STAMP}}.json"
 title = ""
+# /self-improve runs in this session: {"at": history length, "folder": ..., "checkpoint": ...}
+improved: list[dict] = []
 
 
 def save(history: list) -> None:
-    """Write history, title, and cost so far to the current session file."""
+    """Write history, title, cost so far, and /self-improve runs to the current session file."""
     if not history:
         return
-    data = {"title": title, "cost": usage.cost, "history": history}
+    data = {"title": title, "cost": usage.cost, "improved": improved, "history": history}
     current.write_text(json.dumps(data, indent=2) + "\n")
 
 
 def new() -> None:
     """Start a fresh session file with zero cost. The old session stays saved."""
-    global current, title
-    current, title = DIR / f"{datetime.now():{STAMP}}.json", ""
+    global current, title, improved
+    current, title, improved = DIR / f"{datetime.now():{STAMP}}.json", "", []
     usage.cost, usage.priced, usage.input_tokens = 0.0, True, 0
 
 
 def load(path: Path) -> list:
     """Make `path` the current session and return its history. Context size is unknown until the next call."""
-    global current, title
+    global current, title, improved
     data = json.loads(path.read_text())
-    current, title = path, data["title"]
+    current, title, improved = path, data["title"], data.get("improved", [])
     usage.cost, usage.input_tokens = data.get("cost", 0.0), 0
     return data["history"]
 

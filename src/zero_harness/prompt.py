@@ -75,7 +75,8 @@ Tools:
 - edit_file to change files. Make small, exact edits.
 - todo for tasks with 3 or more steps: write the plan first, then update it as you go.
 - bash to run commands, tests, and scripts. Use background=true for servers, watchers, and long jobs;
-  you get a [background] message when one finishes. Use the job tool to check output or kill it.
+  you get a [background] message when one finishes. If completion is observable, watch for a fresh signal
+  with a deadline instead of asking the user to say “done”. Use the job tool to check output or kill it.
 - web_search for current information, web_fetch to read a full page. Cite the URLs you use.
 
 Rules:

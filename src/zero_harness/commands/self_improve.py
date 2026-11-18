@@ -34,12 +34,19 @@ Steps:
 2. Make the approved fixes. Check that zero imports.
 3. Tell the user to type /reload in the other session to apply them.
 
-Rules:
+{earlier}Rules:
 - Prefer code fixes. Change the prompt only when needed, and keep it short.
 - Keep the code clean: the smallest change that fixes the cause. No new layers or abstractions.
 - Ask the user only when absolutely needed.
 - Don't commit. Commit {checkpoint} holds the code from before your changes. To roll back:
   git reset --hard {checkpoint}
+"""
+
+EARLIER = """Earlier self-improve runs in this session. Each shows in screen.txt as a "self-improve ran here" line.
+{runs}
+Issues above the last of those lines were already handled. Focus on what came after it, and use the earlier part
+as context. `git diff {last} {checkpoint}` shows what changed since the last run.
+
 """
 
 
@@ -57,12 +64,23 @@ async def run(history: list, args: str) -> None:
     folder.mkdir(parents=True)
     screen = notes.console.export_text(clear=False).splitlines()
     (folder / "screen.txt").write_text("\n".join(line.rstrip() for line in screen) + "\n")
+    earlier = ""
+    if sessions.improved:
+        runs = "\n".join(f"- checkpoint {run['checkpoint']}, files in {run['folder']}" for run in sessions.improved)
+        earlier = EARLIER.format(runs=runs, last=sessions.improved[-1]["checkpoint"], checkpoint=checkpoint)
+    sessions.improved.append({"at": len(history), "folder": str(folder), "checkpoint": checkpoint})
+    marker(checkpoint)
     sessions.save(history)
     shutil.copy(sessions.current, folder / "session.json")
-    (folder / "brief.md").write_text(BRIEF.format(note=args or "(none)", folder=folder, checkpoint=checkpoint))
+    brief = BRIEF.format(note=args or "(none)", folder=folder, checkpoint=checkpoint, earlier=earlier)
+    (folder / "brief.md").write_text(brief)
     message = f"Read {folder / 'brief.md'} and follow it."
     open_window(f"cd {shlex.quote(str(REPO))} && zero {shlex.quote(message)}")
     note(f"checkpoint {checkpoint}. Type /reload here after the fixes are in.")
+
+
+def marker(checkpoint: str) -> None:
+    notes.console.rule(f"self-improve ran here (checkpoint {checkpoint})", style="dim")
 
 
 def commit() -> str | None:
