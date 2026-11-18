@@ -1,0 +1,25 @@
+import openai
+
+from zero_harness.ui.notes import note
+
+
+class StreamError(Exception):
+    """The response stream ended without a completed response."""
+
+
+RECOVERABLE = (openai.APIError, StreamError)
+
+INTERRUPTED = "interrupted: this tool did not run or did not finish."
+
+
+def report(error: Exception) -> None:
+    note(f"error: {type(error).__name__}: {error}", style="red")
+    note("Conversation kept. Send a message to retry.")
+
+
+def repair(history: list) -> None:
+    """In place: give every unanswered tool call an output. The API rejects a call without one."""
+    answered = {item["call_id"] for item in history if item.get("type") == "function_call_output"}
+    for item in list(history):
+        if item.get("type") == "function_call" and item["call_id"] not in answered:
+            history.append({"type": "function_call_output", "call_id": item["call_id"], "output": INTERRUPTED})

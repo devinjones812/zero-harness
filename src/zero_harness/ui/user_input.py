@@ -1,0 +1,166 @@
+import asyncio
+import os
+import time
+
+from prompt_toolkit import PromptSession
+from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.filters import Condition, to_filter
+from prompt_toolkit.formatted_text import ANSI
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout import (
+    ConditionalContainer,
+    Float,
+    FloatContainer,
+    HSplit,
+    Layout,
+    Window,
+)
+from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.menus import CompletionsMenu
+from prompt_toolkit.output import ColorDepth
+from prompt_toolkit.styles import Style
+
+from zero_harness import sessions, usage
+from zero_harness.ui import notes
+
+STYLE = Style.from_dict(
+    {
+        "input": f"bg:{notes.BACKGROUND}",
+        "prompt": f"{notes.ACCENT} bold",
+        "question": "ansiyellow bold",
+        "status": "#808080",
+        "rule": "#4a4a4a",
+    }
+)
+
+session: PromptSession | None = None
+live = ""
+question = ""
+answer_future: asyncio.Future | None = None
+
+bindings = KeyBindings()
+
+
+@bindings.add("enter")
+def submit_or_newline(event) -> None:
+    """Enter sends. A trailing backslash turns Enter into a newline."""
+    buffer = event.current_buffer
+    if buffer.document.text_before_cursor.endswith("\\"):
+        buffer.delete_before_cursor(1)
+        buffer.insert_text("\n")
+    else:
+        buffer.validate_and_handle()
+
+
+@bindings.add("escape", "enter")
+def newline(event) -> None:
+    event.current_buffer.insert_text("\n")
+
+
+@bindings.add("c-c")
+def clear_or_interrupt(event) -> None:
+    """Ctrl+C clears typed text. With nothing typed, it stops the agent or quits."""
+    if event.current_buffer.text:
+        event.current_buffer.reset()
+    else:
+        event.app.exit(exception=KeyboardInterrupt())
+
+
+def is_command(text: str) -> bool:
+    return text.startswith("/") and "\n" not in text
+
+
+def setup(busy, commands: list[str]) -> None:
+    """Create the prompt, pinned to the bottom of the terminal. Top to bottom:
+
+    the answer being streamed (right under earlier output, so it reads top to bottom and finished blocks
+    land where they streamed), empty space, one blank row that stays when the screen is full,
+    working… and the stats, a rule, the input, a rule.
+    """
+    global session
+
+    def streamed():
+        return ANSI(notes.markdown(live, max_lines=session.app.output.get_size().rows - 9))
+
+    def status_line():
+        dots = "." * (int(time.monotonic() * 3) % 3 + 1)
+        working = f"{notes.INDENT}working{dots}" if busy() and not question else ""
+        stats = usage.status().strip()
+        gap = max(session.app.output.get_size().columns - len(working) - len(stats) - 1, 2)
+        return [("class:status", f"{working}{' ' * gap}{stats}")]
+
+    def prompt():
+        if question:
+            return [("class:question", f"{notes.INDENT}{question} ")]
+        return [("class:prompt", f"{notes.INDENT}❯ ")]
+
+    sessions.DIR.mkdir(exist_ok=True)
+    session = PromptSession(
+        prompt,
+        history=FileHistory(str(sessions.DIR / "prompt_history")),
+        key_bindings=bindings,
+        completer=WordCompleter([f"/{name}" for name in commands], sentence=True),
+        style=STYLE,
+        erase_when_done=True,
+        refresh_interval=0.3,
+        reserve_space_for_menu=0,
+        color_depth=ColorDepth.TRUE_COLOR if os.environ.get("COLORTERM") in ("truecolor", "24bit") else None,
+    )
+    input_window = session.app.layout.current_window
+    input_window.style = "class:input"
+    # Only the empty space at the top may stretch; that is what pins the box to the bottom of the terminal.
+    input_window.dont_extend_height = to_filter(True)
+    rule = Window(char="─", height=1, style="class:rule")
+    screen = HSplit(
+        [
+            ConditionalContainer(
+                Window(FormattedTextControl(streamed), dont_extend_height=True),
+                filter=Condition(lambda: bool(live.strip())),
+            ),
+            Window(),
+            Window(height=1),
+            Window(FormattedTextControl(status_line), height=1),
+            rule,
+            session.app.layout.container,
+            rule,
+        ]
+    )
+    # The completion menu floats over the whole screen; inside the one-row input it has no room to open.
+    menu = Float(xcursor=True, ycursor=True, content=CompletionsMenu(max_height=8, scroll_offset=1))
+    session.app.layout = Layout(FloatContainer(screen, [menu]), focused_element=input_window)
+
+
+async def read() -> str:
+    """Wait for the next non-empty line the user sends."""
+    while True:
+        text = (await session.prompt_async()).strip("\n")
+        if text.strip():
+            return text
+
+
+def show_live(text: str) -> None:
+    global live
+    live = text
+    session.app.invalidate()
+
+
+async def ask(text: str) -> str:
+    """Show `text` as the prompt and wait for the user's answer."""
+    global question, answer_future
+    question, answer_future = text, asyncio.get_running_loop().create_future()
+    session.app.invalidate()
+    try:
+        return await answer_future
+    finally:
+        question, answer_future = "", None
+        session.app.invalidate()
+
+
+def answer(text: str) -> bool:
+    """If a question is waiting, answer it with `text` and return True."""
+    if answer_future is None or answer_future.done():
+        return False
+    notes.note(f"  ↳ {text}")
+    answer_future.set_result(text)
+    return True
