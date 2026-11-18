@@ -58,6 +58,12 @@ def newline(event) -> None:
     event.current_buffer.insert_text("\n")
 
 
+@bindings.add("c-e")
+def edit_in_editor(event) -> None:
+    """Ctrl+E opens the input in $EDITOR. Save and quit to put the text back in the input."""
+    event.current_buffer.open_in_editor()
+
+
 @bindings.add("c-c")
 def clear_or_interrupt(event) -> None:
     """Ctrl+C clears typed text. With nothing typed, it stops the agent or quits."""
@@ -92,10 +98,26 @@ def setup(busy, commands: list[str]) -> None:
         return [("class:status", f"{working}{' ' * gap}{stats}"[:width])]
 
     def redraw_on_resize() -> None:
-        """Clear the screen, then redraw. The terminal rewraps full-width rows when it narrows, so the default
-        erase, which moves up only as many rows as it drew, leaves old rows behind."""
-        session.app.renderer.clear()
-        session.app.invalidate()
+        """Erase the box and redraw it. Output above the box stays. When the terminal narrows, it rewraps each
+        drawn row longer than the new width onto more rows, so count those rows to find the top of the box."""
+        app, renderer = session.app, session.app.renderer
+        drawn, cursor = renderer._last_screen, renderer._cursor_pos
+        columns = app.output.get_size().columns
+        up = cursor.y
+        if drawn and renderer._last_size and columns < renderer._last_size.columns:
+            up = cursor.x // columns
+            for y in range(cursor.y):
+                row = drawn.data_buffer[y]
+                length = max((x + 1 for x, char in row.items() if char.char != " "), default=0)
+                up += max(1, -(-length // columns))
+        app.output.cursor_up(up)
+        app.output.write_raw("\r")
+        app.output.erase_down()
+        app.output.flush()
+        renderer.reset(leave_alternate_screen=False)
+        # The renderer fills the rows below the cursor; this measures them again.
+        app._request_absolute_cursor_position()
+        app.invalidate()
 
     def prompt():
         if question:
@@ -110,6 +132,7 @@ def setup(busy, commands: list[str]) -> None:
         completer=WordCompleter([f"/{name}" for name in commands], sentence=True),
         style=STYLE,
         erase_when_done=True,
+        tempfile_suffix=".md",
         refresh_interval=0.3,
         reserve_space_for_menu=0,
         color_depth=ColorDepth.TRUE_COLOR if os.environ.get("COLORTERM") in ("truecolor", "24bit") else None,

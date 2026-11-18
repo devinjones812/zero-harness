@@ -10,6 +10,8 @@ from zero_harness.ui import notes
 from zero_harness.ui.notes import note
 
 DESCRIPTION = "Open a new zero in its own repo to find and fix what went wrong here. Add a note: /self-improve <note>."
+# Runs even while the agent works. It only reads the session and opens a window, so the turn continues.
+ANYTIME = True
 
 BRIEF = """# Self-improve
 
@@ -55,6 +57,7 @@ async def run(history: list, args: str) -> None:
     folder.mkdir(parents=True)
     screen = notes.console.export_text(clear=False).splitlines()
     (folder / "screen.txt").write_text("\n".join(line.rstrip() for line in screen) + "\n")
+    sessions.save(history)
     shutil.copy(sessions.current, folder / "session.json")
     (folder / "brief.md").write_text(BRIEF.format(note=args or "(none)", folder=folder, checkpoint=checkpoint))
     message = f"Read {folder / 'brief.md'} and follow it."

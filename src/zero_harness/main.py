@@ -86,8 +86,8 @@ async def input_loop(history: list) -> None:
         if user_input.answer(text):
             continue
         if user_input.is_command(text):
-            if busy():
-                note("The agent is working. Wait for it to finish, or press Ctrl+C to stop it.")
+            if busy() and not commands.anytime(text):
+                note(f"{text}: the agent is working. Wait for it to finish, or press Ctrl+C to stop it.")
             else:
                 await commands.run(text, history)
                 sessions.save(history)

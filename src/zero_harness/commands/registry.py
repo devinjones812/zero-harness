@@ -29,6 +29,12 @@ COMMANDS = {
 }
 
 
+def anytime(text: str) -> bool:
+    """True if the /command may run while the agent works."""
+    command = COMMANDS.get(text[1:].partition(" ")[0])
+    return getattr(command, "ANYTIME", False)
+
+
 async def run(text: str, history: list) -> None:
     """Run a /command. Commands change history in place. Unknown commands print the command list."""
     name, _, args = text[1:].partition(" ")

@@ -5,7 +5,7 @@ HOME = Path.home() / ".zero"
 PATH = HOME / "config.json"
 
 DEFAULTS = {
-    "model": "gpt-6-luna",
+    "model": "gpt-6.2-astra",
     "effort": "medium",
     "max_tool_rounds": 50,
     "auto": True,
