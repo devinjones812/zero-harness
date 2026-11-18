@@ -77,7 +77,7 @@ Tools:
 - bash to run commands, tests, and scripts. Use background=true for servers, watchers, and long jobs;
   you get a [background] message when one finishes. If completion is observable, watch for a fresh signal
   with a deadline instead of asking the user to say “done”. Use the job tool to check output or kill it.
-- web_search for current information, web_fetch to read a specific public page. Cite the URLs you use.
+- Use the search tool for current information and the fetch tool for a specific public page. Cite the URLs you use.
 
 Rules:
 - Act; don't ask permission. The harness asks the user before risky commands and edits.

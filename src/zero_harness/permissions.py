@@ -68,7 +68,10 @@ def edit_risk(path: str) -> str | None:
 
 
 async def approve_command(command: str, purpose: str) -> str | None:
-    """auto runs commands the reviewer rates clear. auto-max runs all but known destructive commands."""
+    """Apply the approval mode; only auto consults the configured reviewer.
+
+    Return None to allow execution, or the user's denial for the model.
+    """
     mode, reason = config.get("mode"), "ask mode"
     if mode == "auto-max":
         if not (match := safety.DESTRUCTIVE.search(command)):

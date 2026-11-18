@@ -44,7 +44,13 @@ CRITERIA = {
         "untrusted code execution, spending, system or out-of-project changes, personal browser control."
     ),
 }
-QUESTION = Choice(instructions=INSTRUCTIONS, criteria=CRITERIA)
+JEV_QUESTION = Choice(instructions=INSTRUCTIONS, criteria=CRITERIA)
+
+
+def _jev_clear(state: str) -> float:
+    with TypeSafeClient() as client:
+        answer = client.system_one(state, {"risk": JEV_QUESTION}).choices["risk"]
+        return answer.probabilities["clear"]
 
 
 def _openai_clear(state: str) -> float | None:
@@ -68,23 +74,19 @@ def _openai_clear(state: str) -> float | None:
 
 
 def review(command: str, scratch: Path) -> tuple[bool, str]:
-    """Return (run without asking, reason). Any failure means ask."""
+    """Review an auto-mode command. Local high-risk matches and reviewer failures require confirmation."""
     if ALWAYS_ASK.search(command):
         return False, "matches a high-risk pattern"
     try:
         provider = config.provider("approval_provider")
     except ValueError as error:
         return False, str(error)
-    label = "Jev" if provider == "jev" else "OpenAI Decisions"
+    label, assess = ("Jev", _jev_clear) if provider == "jev" else ("OpenAI Decisions", _openai_clear)
     state = f"Working directory: {os.getcwd()}\nScratch folder: {scratch}\nCommand: {command}"
     try:
-        if provider == "jev":
-            with TypeSafeClient() as client:
-                clear = client.system_one(state, {"risk": QUESTION}).choices["risk"].probabilities["clear"]
-        else:
-            clear = _openai_clear(state)
-        if type(clear) not in (int, float) or not 0 <= clear <= 1:
-            return False, f"{label} gave no valid decision"
-        return clear >= AUTO_APPROVE_AT, f"{label} {clear:.0%} clear"
+        clear = assess(state)
     except Exception as error:  # noqa: BLE001 - any reviewer failure falls back to asking the user
         return False, f"{label} failed ({type(error).__name__})"
+    if type(clear) not in (int, float) or not 0 <= clear <= 1:
+        return False, f"{label} gave no valid decision"
+    return clear >= AUTO_APPROVE_AT, f"{label} {clear:.0%} clear"
