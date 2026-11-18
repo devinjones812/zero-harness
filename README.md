@@ -34,9 +34,19 @@ Auto mode (on by default) lets Jev approve routine shell commands. Risky ones st
 
 Commands: `/new`, `/resume`, `/model`, `/effort`, `/auto`, `/undo`, `/summarize`, `/title`, `/self-improve`, `/reload`.
 
-`/self-improve <note>` commits zero's repo as a checkpoint, then opens a new zero in its own source to find and fix what went wrong in this session. After you approve the fixes, `/reload` restarts zero with the changes and keeps the conversation. Needs a git clone of zero.
-
 What's planned, and what we left out on purpose: [docs/roadmap.md](docs/roadmap.md).
+
+## Self-improvement
+
+When zero falls short mid-conversation, type `/self-improve`, with an optional note such as `/self-improve the approval prompt lost my reply`.
+
+1. zero commits its own repo as a checkpoint.
+2. It saves what you saw on screen and the full session to `~/.zero/self-improve/<time>/`.
+3. It opens a new Terminal window with a zero agent in its own source code. That agent reads the transcript, finds the causes in the code, and proposes fixes.
+4. You approve or comment. The agent makes the fixes.
+5. Type `/reload` in your first window. zero restarts with the fixes, and the conversation continues where it was.
+
+To undo the fixes, run `git reset --hard <checkpoint>`; the agent gives you the hash. This needs a git clone of zero installed with `uv tool install --editable .`. The new-window step needs macOS Terminal; elsewhere, zero prints the command to run.
 
 ## Context
 
