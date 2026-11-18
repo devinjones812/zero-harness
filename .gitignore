@@ -10,3 +10,7 @@ wheels/
 .venv
 
 .env
+
+# Private notes
+docs/*
+!docs/screenshot.png

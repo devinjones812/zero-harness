@@ -80,7 +80,8 @@ def clear_or_interrupt(event) -> None:
 
 
 def is_command(text: str) -> bool:
-    return text.startswith("/") and "\n" not in text
+    """A /command is one line. A first word with another slash is a path, e.g. a dragged-in image."""
+    return text.startswith("/") and "\n" not in text and "/" not in text.split(" ", 1)[0][1:]
 
 
 class WordWrap(Processor):
