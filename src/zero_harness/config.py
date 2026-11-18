@@ -8,7 +8,7 @@ DEFAULTS = {
     "model": "gpt-6.2-astra",
     "effort": "medium",
     "max_tool_rounds": 50,
-    "auto": True,
+    "mode": "auto",
 }
 
 saved = json.loads(PATH.read_text()) if PATH.exists() else {}

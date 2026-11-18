@@ -1,8 +1,8 @@
 import inspect
 
 from zero_harness.commands import (
-    auto,
     effort,
+    mode,
     model,
     new,
     reload,
@@ -20,7 +20,7 @@ COMMANDS = {
     "resume": resume,
     "model": model,
     "effort": effort,
-    "auto": auto,
+    "mode": mode,
     "undo": undo,
     "summarize": summarize,
     "title": title,

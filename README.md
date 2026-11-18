@@ -19,7 +19,7 @@ Put your keys in `~/.zero/.env` (see [`.env.example`](.env.example)):
 ```
 OPENAI_API_KEY=...     # required
 PARALLEL_API_KEY=...   # web_search and web_fetch
-TYPESAFE_API_KEY=...   # auto mode
+TYPESAFE_API_KEY=...   # auto mode (Jev)
 ```
 
 Update with `uv tool upgrade zero-harness`. Config, sessions, and skills live in `~/.zero/`, so updates keep them.
@@ -30,9 +30,9 @@ To hack on it, clone the repo and run `uv tool install --editable .` instead. Co
 
 Run `zero` in any directory, or `zero "message"` to send a first message. `zero -r` resumes a session. Type while the agent works; it reads your message before its next step. Drag in an image to attach it. Ctrl+C clears the input, stops a turn, or quits. Ctrl+E opens the input in `$EDITOR` for long prompts; save and quit to bring the text back.
 
-Auto mode (on by default) lets Jev approve routine shell commands. Risky ones still ask. At `allow? [y/N]`, type anything other than y or n to deny and tell the agent why. Every answer goes to `~/.zero/approvals.jsonl`, so you can see what Jev asks about too often. Temporary files go in a scratch folder that zero deletes on exit.
+`/mode` sets when zero asks before running commands and editing files. `ask` asks every time. `auto` (the default) lets Jev approve routine commands; risky ones still ask. `auto-max` runs everything except a hardcoded list of destructive commands (`DESTRUCTIVE` in `safety.py`), with no Jev call. At `allow? [y/N]`, type anything other than y or n to deny and tell the agent why. Every answer goes to `~/.zero/approvals.jsonl`, so you can see what Jev asks about too often. Temporary files go in a scratch folder that zero deletes on exit.
 
-Commands: `/new`, `/resume`, `/model`, `/effort`, `/auto`, `/undo`, `/summarize`, `/title`, `/self-improve`, `/reload`.
+Commands: `/new`, `/resume`, `/model`, `/effort`, `/mode`, `/undo`, `/summarize`, `/title`, `/self-improve`, `/reload`.
 
 What's planned, and what we left out on purpose: [docs/roadmap.md](docs/roadmap.md).
 

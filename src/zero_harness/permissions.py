@@ -37,9 +37,16 @@ async def ask(**request) -> str | None:
 
 
 async def approve_edit(path: str) -> str | None:
-    """In auto mode, allow edits inside the working directory or scratch folder, except secrets and git internals."""
-    if not config.get("auto"):
-        return await ask(edit=path, reason="auto mode off")
+    """auto allows edits inside the working directory or scratch folder, except secrets and git internals.
+
+    auto-max allows every edit.
+    """
+    mode = config.get("mode")
+    if mode == "auto-max":
+        note("  ↳ auto-approved: auto-max")
+        return None
+    if mode == "ask":
+        return await ask(edit=path, reason="ask mode")
     if reason := edit_risk(path):
         note(f"  ↳ asking: {reason}", style=notes.CAUTION)
         return await ask(edit=path, reason=reason)
@@ -61,9 +68,15 @@ def edit_risk(path: str) -> str | None:
 
 
 async def approve_command(command: str, purpose: str) -> str | None:
-    """In auto mode, run commands Jev rates clear without asking. Everything else asks."""
-    reason = "auto mode off"
-    if config.get("auto"):
+    """auto runs commands Jev rates clear. auto-max runs all but known destructive commands. The rest ask."""
+    mode, reason = config.get("mode"), "ask mode"
+    if mode == "auto-max":
+        if not (match := safety.DESTRUCTIVE.search(command)):
+            note("  ↳ auto-approved: auto-max")
+            return None
+        reason = f"destructive: {match.group().strip()}"
+        note(f"  ↳ asking: {reason}", style=notes.CAUTION)
+    elif mode == "auto":
         run, reason = await asyncio.to_thread(safety.review, command, SCRATCH)
         if run:
             note(f"  ↳ auto-approved: {reason}")
