@@ -60,16 +60,18 @@ def _openai_clear(state: str) -> float | None:
         decision = client.decisions.create(
             model=DECISIONS_MODEL,
             input=state,
-            questions=[{
-                "type": "predicate",
-                "name": "clear",
-                "instructions": (
-                    f"{INSTRUCTIONS} True only for: {CRITERIA['clear']} "
-                    f"False for any of: {CRITERIA['caution']} If unsure, answer false."
-                ),
-            }],
+            questions=[
+                {
+                    "type": "predicate",
+                    "name": "clear",
+                    "instructions": (
+                        f"{INSTRUCTIONS} True only for: {CRITERIA['clear']} "
+                        f"False for any of: {CRITERIA['caution']} If unsure, answer false."
+                    ),
+                }
+            ],
         )
-    answer, = decision.answers
+    (answer,) = decision.answers
     if answer.type == "predicate" and answer.name == "clear":
         return answer.probability
     return None

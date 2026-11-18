@@ -41,7 +41,7 @@ def load_git() -> str:
             return ""
         status = git("status", "--short").splitlines()
         log = git("log", "--oneline", "-5") or "(no commits)"
-    except (OSError, subprocess.TimeoutExpired):
+    except OSError, subprocess.TimeoutExpired:
         return ""
     if len(status) > GIT_STATUS_LINES:
         status = status[:GIT_STATUS_LINES] + [f"... {len(status) - GIT_STATUS_LINES} more"]
@@ -59,7 +59,9 @@ def load_skills() -> str:
     for path in sorted(SKILLS.glob("*/SKILL.md")):
         text = path.read_text()
         meta = text.split("---")[1] if text.startswith("---") else ""
-        description = next((line.split(":", 1)[1].strip() for line in meta.splitlines() if line.startswith("description:")), "")
+        description = next(
+            (line.split(":", 1)[1].strip() for line in meta.splitlines() if line.startswith("description:")), ""
+        )
         lines.append(f"- {path.parent.name}: {description} ({path})")
     if not lines:
         return ""

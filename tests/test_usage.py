@@ -8,7 +8,9 @@ RATES = {
     "output": 10,
     "cache_read": 0.1,
     "cache_write": 2.5,
-    "tiers": [{"input": 4, "output": 15, "cache_read": 0.2, "cache_write": 5, "tier": {"type": "context", "size": 272_000}}],
+    "tiers": [
+        {"input": 4, "output": 15, "cache_read": 0.2, "cache_write": 5, "tier": {"type": "context", "size": 272_000}}
+    ],
 }
 
 

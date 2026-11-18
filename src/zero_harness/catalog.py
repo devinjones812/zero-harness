@@ -27,7 +27,7 @@ def load() -> str | None:
         try:
             cached = refresh()
             age = 0
-        except (httpx.HTTPError, ValueError, KeyError):
+        except httpx.HTTPError, ValueError, KeyError:
             pass
     if cached.get("version") != VERSION:
         return "[catalog] could not reach models.dev, so model lists, prices, and context sizes are limited."
@@ -54,7 +54,9 @@ def refresh() -> dict:
 
 
 def entry(model: dict) -> dict:
-    efforts = next((option["values"] for option in model.get("reasoning_options", []) if option["type"] == "effort"), None)
+    efforts = next(
+        (option["values"] for option in model.get("reasoning_options", []) if option["type"] == "effort"), None
+    )
     return {
         "cost": model.get("cost"),
         "context": model.get("limit", {}).get("context"),

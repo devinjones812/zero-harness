@@ -84,7 +84,12 @@ def test_reply_blocks_become_history_items():
         "role": "assistant",
         "content": [{"type": "output_text", "text": "hi"}],
     }
-    assert item(tool) == {"type": "function_call", "call_id": "c1", "name": "grep", "arguments": json.dumps({"pattern": "x"})}
+    assert item(tool) == {
+        "type": "function_call",
+        "call_id": "c1",
+        "name": "grep",
+        "arguments": json.dumps({"pattern": "x"}),
+    }
     thought = item(ThinkingBlock(type="thinking", thinking="plan", signature="sig"))
     assert thought["api"] == "anthropic"
     assert thought["block"] == {"type": "thinking", "thinking": "plan", "signature": "sig"}

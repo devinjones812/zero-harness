@@ -64,4 +64,6 @@ async def compact(history: list, why: str) -> None:
     notes.note("[context] summarizing...")
     summary = await llm.complete(history + [{"role": "user", "content": SUMMARY_REQUEST}])
     notes.note(f"[context] compact: {why}. Replaced {len(history)} history items with a {len(summary):,}-char summary.")
-    history[:] = [{"role": "user", "content": f"Summary of the conversation so far:\n\n{summary}\n\nContinue from here."}]
+    history[:] = [
+        {"role": "user", "content": f"Summary of the conversation so far:\n\n{summary}\n\nContinue from here."}
+    ]

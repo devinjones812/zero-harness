@@ -34,7 +34,9 @@ turn: asyncio.Task | None = None
 def main() -> None:
     parser = argparse.ArgumentParser(prog="zero", description="A coding agent for your terminal.")
     parser.add_argument("message", nargs="?", help="first message to send")
-    parser.add_argument("-r", "--resume", nargs="?", const="", metavar="SESSION", help="pick a session, or give its file")
+    parser.add_argument(
+        "-r", "--resume", nargs="?", const="", metavar="SESSION", help="pick a session, or give its file"
+    )
     parser.add_argument("--reloaded", metavar="SESSION", help=argparse.SUPPRESS)  # set by /reload
     args = parser.parse_args()
     if not sys.stdin.isatty():

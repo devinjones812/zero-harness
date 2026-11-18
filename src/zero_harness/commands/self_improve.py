@@ -101,7 +101,14 @@ def commit() -> str | None:
 def open_window(command: str) -> None:
     """Run `command` in a new macOS Terminal window. Elsewhere, print it for the user to run."""
     if sys.platform == "darwin":
-        script = ["on run argv", 'tell application "Terminal"', "do script (item 1 of argv)", "activate", "end tell", "end run"]
+        script = [
+            "on run argv",
+            'tell application "Terminal"',
+            "do script (item 1 of argv)",
+            "activate",
+            "end tell",
+            "end run",
+        ]
         lines = [arg for line in script for arg in ("-e", line)]
         if subprocess.run(["osascript", *lines, command], check=False, capture_output=True).returncode == 0:
             return

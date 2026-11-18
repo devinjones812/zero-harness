@@ -13,4 +13,9 @@ def run(history: list, args: str) -> None:
         return
     names = ", ".join(os.path.relpath(file) for file in files)
     note(f"restored: {names}")
-    history.append({"role": "user", "content": f"(I undid your edits to: {names}. They are back to how they were before that turn.)"})
+    history.append(
+        {
+            "role": "user",
+            "content": f"(I undid your edits to: {names}. They are back to how they were before that turn.)",
+        }
+    )
