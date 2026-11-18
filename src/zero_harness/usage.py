@@ -2,9 +2,11 @@ import re
 
 from zero_harness import config
 
-# Standard tier, USD per 1M tokens: (input, cached input, output). OpenAI pricing page, Nov 2026.
+# Standard tier, USD per 1M tokens: (input, cached input, output).
+# https://developers.openai.com/api/docs/pricing (Nov 2026)
 PRICES = {
     "gpt-6.2-astra": (8.00, 0.40, 40.00),
+    "gpt-6.2-sol": (2.00, 0.10, 10.00),
     "gpt-6.1-sol": (2.00, 0.10, 10.00),
     "gpt-6.1-terra": (1.00, 0.05, 5.00),
     "gpt-6-astra": (10.00, 1.00, 50.00),
@@ -17,7 +19,7 @@ WHEEL = "○◔◑◕●"
 
 cost = 0.0
 priced = True
-input_tokens = 0
+input_tokens: int | None = 0
 
 
 def record(response, conversation: bool = True) -> None:
@@ -35,15 +37,20 @@ def record(response, conversation: bool = True) -> None:
     cost += (
         (usage.input_tokens - cached) * price[0] * (2 if long else 1)
         + cached * price[1] * (2 if long else 1)
+        # Output tokens include reasoning tokens at every effort level.
         + usage.output_tokens * price[2] * (1.5 if long else 1)
     ) / 1_000_000
 
 
 def status() -> str:
     """One line: context wheel and percent, tokens, session cost, model and effort, auto mode."""
-    used = input_tokens / CONTEXT_WINDOW
-    wheel = WHEEL[min(round(used * 4), 4)]
+    if input_tokens is None:
+        context = "○ context unmeasured"
+    else:
+        used = input_tokens / CONTEXT_WINDOW
+        wheel = WHEEL[min(round(used * 4), 4)]
+        tokens = f"{input_tokens / 1000:.1f}k" if input_tokens >= 1000 else str(input_tokens)
+        context = f"{wheel} {used:.0%} context  {tokens}/1M"
     price = f"${cost:.2f}" if priced else f"${cost:.2f}+ (unknown price for {config.get('model')})"
     auto = "" if config.get("mode") == "ask" else f"  {config.get('mode')}"
-    tokens = f"{input_tokens / 1000:.1f}k" if input_tokens >= 1000 else str(input_tokens)
-    return f" {wheel} {used:.0%} context  {tokens}/1M  {price}  {config.get('model')} {config.get('effort')}{auto}"
+    return f" {context}  {price}  {config.get('model')} {config.get('effort')}{auto}"

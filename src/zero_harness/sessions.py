@@ -15,10 +15,16 @@ improved: list[dict] = []
 
 
 def save(history: list) -> None:
-    """Write history, title, cost so far, and /self-improve runs to the current session file."""
+    """Write history, title, usage, and /self-improve runs to the current session file."""
     if not history:
         return
-    data = {"title": title, "cost": usage.cost, "improved": improved, "history": history}
+    data = {
+        "title": title,
+        "cost": usage.cost,
+        "input_tokens": usage.input_tokens,
+        "improved": improved,
+        "history": history,
+    }
     current.write_text(json.dumps(data, indent=2) + "\n")
 
 
@@ -30,11 +36,11 @@ def new() -> None:
 
 
 def load(path: Path) -> list:
-    """Make `path` the current session and return its history. Context size is unknown until the next call."""
+    """Restore the session and its last measured context, if saved."""
     global current, title, improved
     data = json.loads(path.read_text())
     current, title, improved = path, data["title"], data.get("improved", [])
-    usage.cost, usage.input_tokens = data.get("cost", 0.0), 0
+    usage.cost, usage.input_tokens = data.get("cost", 0.0), data.get("input_tokens")
     return data["history"]
 
 

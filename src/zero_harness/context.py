@@ -26,6 +26,8 @@ Plain text only. Do not call tools."""
 async def manage(history: list) -> None:
     """Trim or compact history based on the last call's input tokens. Call only when every tool call has its output."""
     input_tokens = usage.input_tokens
+    if input_tokens is None:
+        return
     if input_tokens > COMPACT_AT_TOKENS:
         await compact(history, f"last call used {input_tokens:,} input tokens (limit {COMPACT_AT_TOKENS:,})")
     elif input_tokens > TRIM_AT_TOKENS:
