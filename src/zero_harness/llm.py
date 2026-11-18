@@ -11,7 +11,19 @@ from zero_harness.ui.stream import print_stream
 
 load_dotenv(config.HOME / ".env")
 if not os.getenv("OPENAI_API_KEY"):
-    sys.exit(f"zero: set OPENAI_API_KEY in {config.HOME / '.env'} (see .env.example in the repo).")
+    if not sys.stdin.isatty():
+        sys.exit(f"zero: set OPENAI_API_KEY in {config.HOME / '.env'}.")
+    print("zero needs an OpenAI API key. Create one at https://platform.openai.com/api-keys")
+    key = input("Paste your key and press Enter: ").strip()
+    if not key:
+        sys.exit("zero: no key entered.")
+    config.HOME.mkdir(parents=True, exist_ok=True)
+    env_file = config.HOME / ".env"
+    with env_file.open("a") as file:
+        file.write(f"\nOPENAI_API_KEY={key}\n")
+    env_file.chmod(0o600)
+    os.environ["OPENAI_API_KEY"] = key
+    print(f"Saved to {env_file}.\n")
 client = AsyncOpenAI(max_retries=4)
 
 

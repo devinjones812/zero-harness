@@ -1,6 +1,10 @@
 import subprocess
+import sys
+from pathlib import Path
 
 MAX_MATCHES = 100
+# The ripgrep dependency installs rg into zero's own environment, which uv tool does not put on PATH.
+RG = Path(sys.executable).parent / "rg"
 
 SCHEMA = {
     "type": "function",
@@ -22,7 +26,7 @@ SCHEMA = {
 
 def run(pattern: str, path: str = ".") -> str:
     result = subprocess.run(
-        ["rg", "--line-number", "--no-heading", "--color=never", "--max-columns=300", "-e", pattern, path],
+        [RG, "--line-number", "--no-heading", "--color=never", "--max-columns=300", "-e", pattern, path],
         check=False,
         capture_output=True,
         text=True,

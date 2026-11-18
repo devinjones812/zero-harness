@@ -1,21 +1,25 @@
 # zero-harness
 
 A minimal terminal agent harness I built around OpenAI models. 
-Designed for efficiency and reliability. <2,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? <kbd>**ZERO**</kbd>. **It can also fix itself.**
+Designed for efficiency and reliability. <2,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? **ZERO**. **It can also fix itself.**
 
 ![zero fixing a failing test](assets/demo.gif)
 
 ## Setup
 
-Needs macOS, [uv](https://docs.astral.sh/uv/), and [ripgrep](https://github.com/BurntSushi/ripgrep).
+Needs macOS, [uv](https://docs.astral.sh/uv/getting-started/installation/), and an [OpenAI API key](https://platform.openai.com/api-keys).
 
 ```bash
-uv tool install git+https://github.com/devinjones812/zero-harness
+uv tool install https://github.com/devinjones812/zero-harness/archive/main.zip
 ```
 
-Put `OPENAI_API_KEY` in `~/.zero/.env` (see [`.env.example`](.env.example)) and run `zero`. OpenAI handles chat, web search, and command reviews by default.
+Run `zero` and paste your API key. It's stored locally in `~/.zero/.env`.
 
-To customize providers, edit `~/.zero/config.json`. For example, set `"search_provider": "parallel"` and add `PARALLEL_API_KEY` to `~/.zero/.env`.
+---
+
+*No uv? Install it with `curl -LsSf https://astral.sh/uv/install.sh | sh`, then open a new terminal.
+
+---
 
 ## Features
 
@@ -23,8 +27,9 @@ To customize providers, edit `~/.zero/config.json`. For example, set `"search_pr
 - **Approvals that stay out of your way.** In `auto` mode, OpenAI or Jev reviews routine commands. If the review fails, zero asks you. At a prompt, type a reason instead of "no" and the agent changes course.
 - **Steer it live.** Type while it works and it reads your message before its next step. Its thinking streams as it goes, so you can stop it early.
 - **Long sessions.** It trims and summarizes context before the window fills. Every session is saved and resumable.
+- **Optional providers.** Add them anytime. For Parallel web search, set `"search_provider": "parallel"` in `~/.zero/config.json` and add `PARALLEL_API_KEY` to `~/.zero/.env`.
 
-Tools: `bash`, `job`, `read_file`, `edit_file`, `grep`, `web_search`, `web_fetch`, `todo`.
+Tools: `bash`, `job`, `read_file`, `edit_file`, `grep`, `todo`, and one search/fetch pair from the configured provider.
 
 ## Commands
 
