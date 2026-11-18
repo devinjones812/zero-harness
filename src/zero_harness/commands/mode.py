@@ -2,7 +2,7 @@ from zero_harness import config
 from zero_harness.ui.notes import note
 
 DESCRIPTION = (
-    "Approval mode. ask: ask before every command and edit. auto: Jev approves routine commands. "
+    "Approval mode. ask: ask before every command and edit. auto: review routine commands with the configured provider. "
     "auto-max: everything runs except known destructive commands. /mode <name>; /mode alone cycles."
 )
 MODES = OPTIONS = ["ask", "auto", "auto-max"]

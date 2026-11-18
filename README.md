@@ -13,14 +13,14 @@ Needs macOS, [uv](https://docs.astral.sh/uv/), and [ripgrep](https://github.com/
 uv tool install git+https://github.com/devinjones812/zero-harness
 ```
 
-Put your keys in `~/.zero/.env` (see [`.env.example`](.env.example)). Only `OPENAI_API_KEY` is required. `PARALLEL_API_KEY` enables web search; `TYPESAFE_API_KEY` enables `auto` approvals.
+Put `OPENAI_API_KEY` in `~/.zero/.env` (see [`.env.example`](.env.example)) and run `zero`. OpenAI handles chat, web search, and command reviews by default.
 
-Run `zero` in any directory to start.
+To customize providers, edit `~/.zero/config.json`. For example, set `"search_provider": "parallel"` and add `PARALLEL_API_KEY` to `~/.zero/.env`.
 
 ## Features
 
 - **Fixes itself.** When it falls short, with one command you can open a new zero in its own source code with a transcript of your session. That agent finds the cause, proposes fixes, and your conversation reloads with them in place.
-- **Approvals that stay out of your way.** Jev approves routine commands, or turn it off and get asked only for known destructive commands like `rm -rf ~` and `git reset --hard`. At a prompt, type a reason instead of "no" and the agent changes course.
+- **Approvals that stay out of your way.** In `auto` mode, OpenAI or Jev reviews routine commands. If the review fails, zero asks you. At a prompt, type a reason instead of "no" and the agent changes course.
 - **Steer it live.** Type while it works and it reads your message before its next step. Its thinking streams as it goes, so you can stop it early.
 - **Long sessions.** It trims and summarizes context before the window fills. Every session is saved and resumable.
 

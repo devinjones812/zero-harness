@@ -68,7 +68,7 @@ def edit_risk(path: str) -> str | None:
 
 
 async def approve_command(command: str, purpose: str) -> str | None:
-    """auto runs commands Jev rates clear. auto-max runs all but known destructive commands. The rest ask."""
+    """auto runs commands the reviewer rates clear. auto-max runs all but known destructive commands."""
     mode, reason = config.get("mode"), "ask mode"
     if mode == "auto-max":
         if not (match := safety.DESTRUCTIVE.search(command)):
