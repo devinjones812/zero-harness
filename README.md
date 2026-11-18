@@ -1,19 +1,21 @@
 # zero-harness
 
-A minimal terminal agent harness I built around OpenAI models. 
-Designed for efficiency and reliability. <2,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? **ZERO**. **It can also fix itself.**
+A minimal terminal agent harness for OpenAI, Anthropic, and any other model provider.
+Designed for efficiency and reliability. Under 3,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? **ZERO**. **It can also fix itself.**
 
 ![zero fixing a failing test](assets/demo.gif)
 
 ## Setup
 
-Needs macOS, [uv](https://docs.astral.sh/uv/getting-started/installation/), and an [OpenAI API key](https://platform.openai.com/api-keys).
+Needs macOS, [uv](https://docs.astral.sh/uv/getting-started/installation/), and an [OpenAI](https://platform.openai.com/api-keys) or [Anthropic](https://platform.claude.com/settings/keys) API key.\*
 
 ```bash
 uv tool install https://github.com/devinjones812/zero-harness/archive/main.zip
 ```
 
-Run `zero` and paste your API key. It's stored locally in `~/.zero/.env`.
+Run `zero`, pick a provider and model, and paste your key. It's stored locally in `~/.zero/.env`.
+
+\*Other providers work too: ask zero to add one (any API compatible with OpenAI's Responses API, such as [Venice](https://venice.ai)), then pick it with `/model`.
 
 ---
 
@@ -24,20 +26,22 @@ Run `zero` and paste your API key. It's stored locally in `~/.zero/.env`.
 ## Features
 
 - **Fixes itself.** When it falls short, with one command you can open a new zero in its own source code with a transcript of your session. That agent finds the cause, proposes fixes, and your conversation reloads with them in place.
-- **Approvals that stay out of your way.** In `auto` mode, OpenAI or Jev reviews routine commands. If the review fails, zero asks you. At a prompt, type a reason instead of "no" and the agent changes course.
+- **Any model, switch anytime.** `/model` shows each provider's newest model of each family, with the full list one step away. Switch mid-session; the conversation carries over.
+- **Approvals that stay out of your way.** In `auto-review` mode, a cheap reviewer approves routine commands: OpenAI Decisions with an OpenAI key, or Jev with a `TYPESAFE_API_KEY`. Without either, use `ask` or `auto-max`. At a prompt, type a reason instead of "no" and the agent changes course.
 - **Steer it live.** Type while it works and it reads your message before its next step. Its thinking streams as it goes, so you can stop it early.
 - **Long sessions.** It trims and summarizes context before the window fills. Every session is saved and resumable.
-- **Optional providers.** Add them anytime. For Parallel web search, set `"search_provider": "parallel"` in `~/.zero/config.json` and add `PARALLEL_API_KEY` to `~/.zero/.env`.
+- **Web search** with your model's provider: OpenAI or Anthropic search, run on their cheapest current model. For other providers, or if you prefer it, add a [Parallel](https://parallel.ai) key and ask zero to use it.
+- **Live prices.** Model lists, prices, context sizes, and reasoning levels come from [models.dev](https://models.dev), cached in `~/.zero/catalog.json` and refreshed at startup once a day.
 
-Tools: `bash`, `job`, `read_file`, `edit_file`, `grep`, `todo`, and one search/fetch pair from the configured provider.
+Tools: `bash`, `job`, `read_file`, `edit_file`, `grep`, `web_search`, `web_fetch`, `todo`.
 
 ## Commands
 
 | Command | What it does |
 | --- | --- |
-| `/model` | Pick a model, then its reasoning effort. |
-| `/effort <level>` | Set reasoning effort: `low`, `medium`, `high`, `xhigh`, `max`. |
-| `/mode <mode>` | Set approvals: `ask`, `auto`, `auto-max`. |
+| `/model [provider] [model]` | Pick a provider, model, and reasoning level. Tab completes; arrow keys pick. |
+| `/reasoning [level]` | Set reasoning. Levels depend on the model. |
+| `/mode [mode]` | Set approvals: `ask`, `auto-review`, `auto-max`. |
 | `/new` | Start a new session. |
 | `/resume` | Continue a saved session. |
 | `/undo` | Undo the last turn's file edits. Repeat to go further back. |
@@ -50,7 +54,11 @@ Ctrl+E opens the input in `$EDITOR`. End a line with `\` for a newline.
 
 ## Hacking on zero
 
-Clone the repo and run `uv tool install --editable .`. Code edits apply after `/reload`. `/self-improve` needs this install. To add a tool, create `src/zero_harness/tools/<name>.py` with a `SCHEMA` and a `run()`, then add it to `TOOLS` in `tools/registry.py`.
+Clone the repo and run `uv tool install --editable .`. Code edits apply after `/reload`. Run tests with `uv run pytest`. `/self-improve` needs this install.
+
+- Add a tool: create `src/zero_harness/tools/<name>.py` with a `SCHEMA` and a `run()`, then add it to `TOOLS` in `tools/registry.py`.
+- Add a provider: see the format at the top of `src/zero_harness/models/registry.py`.
+- Add an API format (beyond OpenAI Responses and Anthropic Messages): add a module to `src/zero_harness/models/`.
 
 ## License
 
