@@ -1,10 +1,12 @@
 import json
+import re
 from pathlib import Path
 
 import questionary
 
 from zero_harness import sessions
 from zero_harness.commands import self_improve
+from zero_harness.tools import todo
 from zero_harness.tools.registry import summary
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
@@ -40,13 +42,18 @@ def replay(history: list) -> None:
         if item.get("role") == "user":
             text = user_text(item["content"])
             if text.startswith(("[background]", "(I undid")):
-                note(text.splitlines()[0])
+                job = re.match(r"(\[background\] job \d+) `.*?`: (exited with code -?\d+)(?:\n|$)", text, re.S)
+                note(f"{job[1]} {job[2]}" if job else text.splitlines()[0])
             elif text.startswith("Summary of the conversation so far"):
                 note("[summary] earlier messages were summarized")
             else:
                 notes.user(text)
         elif item.get("type") == "function_call":
-            notes.tool(item["name"], summary(json.loads(item["arguments"])))
+            args = json.loads(item["arguments"])
+            if item["name"] == "todo":
+                todo.run(args["items"])
+            else:
+                notes.tool(item["name"], summary(args))
         elif item.get("type") == "message" and item.get("role") == "assistant":
             text = "".join(part.get("text", "") for part in item["content"])
             if text.strip():
