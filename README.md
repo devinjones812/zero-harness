@@ -54,7 +54,7 @@ ln -s ~/path/to/AGENTS.md ~/.zero/AGENTS.md
 ### `$` Live prices
 Models, prices, context sizes, and reasoning levels come from [models.dev](https://models.dev). Cached in `~/.zero/catalog.json`, refreshed at startup once a day.
 
-**Tools:** `bash` | `job` · `read_file` · `edit_file` · `grep` · `web_search` · `web_fetch` · `todo`
+**Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo`
 
 ## Commands
 
