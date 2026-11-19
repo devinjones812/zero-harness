@@ -1,21 +1,18 @@
 # zero-harness
 
-A minimal terminal agent harness for OpenAI, Anthropic, and any other model provider.
-Designed for efficiency and reliability. Under 3,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? **ZERO**. **It can also fix itself.**
+A minimal terminal agent harness designed for efficiency and reliability. Under 3,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? **ZERO**. **It can also fix itself.**
 
 ![zero fixing a failing test](assets/demo.gif)
 
 ## Setup
 
-Needs macOS, [uv](https://docs.astral.sh/uv/getting-started/installation/), and an [OpenAI](https://platform.openai.com/api-keys) or [Anthropic](https://platform.claude.com/settings/keys) API key.\*
+Needs macOS, [uv](https://docs.astral.sh/uv/getting-started/installation/), and an [OpenAI](https://platform.openai.com/api-keys) or [Anthropic](https://platform.claude.com/settings/keys) API key.
 
 ```bash
 uv tool install https://github.com/devinjones812/zero-harness/archive/main.zip
 ```
 
 Run `zero`, pick a provider and model, and paste your key. It's stored locally in `~/.zero/.env`.
-
-\*Other providers work too: ask zero to add one (any API compatible with OpenAI's Responses API, such as [Venice](https://venice.ai)), then pick it with `/model`.
 
 ---
 
@@ -26,7 +23,7 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 ## Features
 
 - **Fixes itself.** When it falls short, with one command you can open a new zero in its own source code with a transcript of your session. That agent finds the cause, proposes fixes, and your conversation reloads with them in place.
-- **Any model, switch anytime.** `/model` shows each provider's newest model of each family, with the full list one step away. Switch mid-session; the conversation carries over.
+- **Any model, switch anytime.** `/model` shows each provider's newest model of each family, with the full list one step away. Switch mid-session; the conversation carries over. To add another provider (any API compatible with OpenAI's Responses API or Anthropic's Messages API, such as [Venice](https://venice.ai)), ask zero to add it, then pick it with `/model`.
 - **Approvals that stay out of your way.** In `auto-review` mode, a cheap reviewer approves routine commands: OpenAI Decisions with an OpenAI key, or Jev with a `TYPESAFE_API_KEY`. Without either, use `ask` or `auto-max`. At a prompt, type a reason instead of "no" and the agent changes course.
 - **Steer it live.** Type while it works and it reads your message before its next step. Its thinking streams as it goes, so you can stop it early.
 - **Long sessions.** It trims and summarizes context before the window fills. Every session is saved and resumable.
