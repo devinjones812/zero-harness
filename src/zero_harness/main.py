@@ -78,7 +78,7 @@ async def run(args: argparse.Namespace) -> None:
     if args.resume is not None:
         await commands.run(f"/resume {args.resume}".strip(), history)
     jobs.on_finish = lambda: inbox.put_nowait(None)
-    user_input.setup(busy, commands.options(), notes.console.reprint)
+    user_input.setup(busy, commands.options())
     with patch_stdout(raw=True):
         agent = asyncio.create_task(agent_loop(history))
         if args.message:

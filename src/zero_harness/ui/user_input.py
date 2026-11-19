@@ -40,7 +40,8 @@ STYLE = Style.from_dict(
 )
 
 RESIZE_SETTLE = 0.15  # seconds after the last resize before the screen is rebuilt
-MAX_REPRINT_LINES = 1000
+MAX_REPRINT_LINES = 2000
+CUT_NOTE = "(earlier output is hidden after a resize; /history shows all of it)"
 
 session: PromptSession | None = None
 live = ""
@@ -156,15 +157,14 @@ class CommandCompleter(Completer):
                 yield Completion(word, start_position=-len(typed))
 
 
-def setup(busy, commands: dict, reprint) -> None:
+def setup(busy, commands: dict) -> None:
     """Create the prompt, pinned to the bottom of the terminal. Top to bottom:
 
     the answer being streamed (right under earlier output, so it reads top to bottom and finished blocks
     land where they streamed), empty space, one blank row that stays when the screen is full,
     working… and the stats, a rule, the input, a rule.
 
-    `commands` maps each /command name to complete(words), for Tab completion. reprint() prints everything shown
-    so far again; a resize calls it.
+    `commands` maps each /command name to complete(words), for Tab completion.
     """
     global session
 
@@ -201,9 +201,9 @@ def setup(busy, commands: dict, reprint) -> None:
         if not app.is_running or app.output.get_size() == built_for:
             return
         built_for = app.output.get_size()
-        with notes.console.capture() as capture:
-            reprint()
-        lines = capture.get().splitlines()[-MAX_REPRINT_LINES:]
+        lines = notes.console.printed_lines(MAX_REPRINT_LINES)
+        if len(lines) > MAX_REPRINT_LINES:
+            lines = [f"\x1b[2m{CUT_NOTE}\x1b[0m", *lines[-MAX_REPRINT_LINES:]]
         # Synchronized output (?2026) shows the clear and the reprint as one frame on terminals that support it.
         app.output.write_raw(
             "\x1b[?2026h\x1b[H\x1b[2J\x1b[3J" + "".join(f"{line}\r\n" for line in lines) + "\x1b[?2026l"

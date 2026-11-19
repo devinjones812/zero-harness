@@ -1,6 +1,7 @@
 import inspect
 
 from zero_harness.commands import (
+    history,
     mode,
     model,
     new,
@@ -22,6 +23,7 @@ COMMANDS = {
     "reasoning": reasoning,
     "mode": mode,
     "undo": undo,
+    "history": history,
     "summarize": summarize,
     "title": title,
     "self-improve": self_improve,

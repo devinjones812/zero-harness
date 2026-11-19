@@ -1,5 +1,4 @@
 import io
-from collections import deque
 
 import rich.console
 from rich.markdown import Markdown
@@ -7,15 +6,13 @@ from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
 
-MAX_REPRINTS = 2000
-
 
 class Console(rich.console.Console):
-    """Keeps the last MAX_REPRINTS print calls, so a resize can print them again at the new width."""
+    """Keeps every print call, so a resize or /history can render them again at the current width."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.printed = deque(maxlen=MAX_REPRINTS)
+        self.printed = []
         self.keep = True
 
     def print(self, *objects, **kwargs) -> None:
@@ -23,13 +20,22 @@ class Console(rich.console.Console):
             self.printed.append((objects, kwargs))
         super().print(*objects, **kwargs)
 
-    def reprint(self) -> None:
+    def printed_lines(self, max_lines: int | None = None) -> list[str]:
+        """Everything printed, as ANSI lines at the current width. With max_lines, renders newest first and
+        stops once it has more than max_lines, so a long session costs no more than a short one."""
+        chunks, count = [], 0
         self.keep = False
         try:
-            for objects, kwargs in list(self.printed):
-                super().print(*objects, **kwargs)
+            for objects, kwargs in reversed(self.printed):
+                with self.capture() as capture:
+                    super().print(*objects, **kwargs)
+                chunks.append(capture.get().splitlines())
+                count += len(chunks[-1])
+                if max_lines and count > max_lines:
+                    break
         finally:
             self.keep = True
+        return [line for chunk in reversed(chunks) for line in chunk]
 
 
 class Wrapped:

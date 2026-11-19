@@ -43,6 +43,7 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 | `/new` | Start a new session. |
 | `/resume` | Continue a saved session. |
 | `/undo` | Undo the last turn's file edits. Repeat to go further back. |
+| `/history` | Show everything printed this session in a pager. `q` returns. |
 | `/summarize` | Replace the conversation with a summary to free up context. |
 | `/title <title>` | Rename the session. |
 | `/self-improve <note>` | Have a new zero find and fix what went wrong here. |
