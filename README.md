@@ -23,12 +23,19 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 ## Features
 
 - **Self-repair.** `/self-improve` opens a new zero in its own source with your transcript. It finds the cause, fixes it, and reloads your session.
+
 - **Any model.** `/model` lists each provider's newest models. Switch mid-session without losing context. Ask zero to add any OpenAI- or Anthropic-compatible provider, such as [Venice](https://venice.ai).
+
 - **Light approvals.** `auto-review` lets a cheap reviewer approve routine commands (needs an OpenAI or `TYPESAFE_API_KEY` key). To deny, type a reason and the agent changes course.
+
 - **Live steering.** Type while it works. It reads your message before its next step.
+
 - **Long sessions.** Context is summarized before the window fills. Every session is saved and resumable.
+
 - **Web search.** Uses OpenAI or Anthropic search, or [Parallel](https://parallel.ai) for other providers.
+
 - **Your rules.** Reads `~/.zero/AGENTS.md` (symlink it to share with other agents) and the project's `AGENTS.md` or `CLAUDE.md`.
+
 - **Live prices.** Models, prices, and context sizes come from [models.dev](https://models.dev), refreshed daily.
 
 **Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo`
