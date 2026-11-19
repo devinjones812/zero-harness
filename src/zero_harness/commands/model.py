@@ -5,6 +5,7 @@ import questionary
 from zero_harness import config, errors
 from zero_harness.commands import reasoning
 from zero_harness.models import listing, registry
+from zero_harness.ui import user_input
 from zero_harness.ui.notes import note
 
 DESCRIPTION = "Switch models: /model picks a provider, model, and reasoning. /model <provider> <model> skips ahead."
@@ -90,8 +91,10 @@ async def ask_key(name: str) -> bool:
     """Ask for a provider's API key without showing it, and save it to ~/.zero/.env. False if none entered."""
     settings = registry.provider(name)
     env = settings["key_env"]
-    where = f" Create one at {settings['key_url']}" if "key_url" in settings else ""
-    key = await questionary.password(f"{name} needs {env}.{where}\n  Paste it:").ask_async()
+    note(f"{name} needs {env}.", style="default")
+    if "key_url" in settings:
+        note(f"Create one at {settings['key_url']}")
+    key = await user_input.secret("Paste key: ")
     if not key or not key.strip():
         return False
     config.HOME.mkdir(parents=True, exist_ok=True)

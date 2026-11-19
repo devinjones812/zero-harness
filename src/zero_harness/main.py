@@ -20,7 +20,7 @@ from zero_harness import (
     permissions,
     sessions,
 )
-from zero_harness.commands import mode, model, reload
+from zero_harness.commands import mode, model, reload, resume
 from zero_harness.commands import registry as commands
 from zero_harness.models import registry as models
 from zero_harness.tools import registry as tools
@@ -69,15 +69,13 @@ async def run(args: argparse.Namespace) -> None:
         # The window still shows the conversation, so load it without printing anything.
         history[:] = sessions.load(Path(args.reloaded))
     elif args.reloaded is None:
-        logo.show()
-        note(f"zero  {config.get('model')}  {os.getcwd()}")
-        note("type / for commands, Ctrl+C clears the input")
+        welcome()
         if config.get("mode") == "auto-review" and not config.reviewer():
             note(f"[mode] {mode.NO_REVIEWER}", style="yellow")
     if args.resume is not None:
         await commands.run(f"/resume {args.resume}".strip(), history)
     jobs.on_finish = lambda: inbox.put_nowait(None)
-    user_input.setup(busy, commands.options())
+    user_input.setup(busy, commands.options(), lambda: (welcome(), resume.replay(history)))
     with patch_stdout(raw=True):
         agent = asyncio.create_task(agent_loop(history))
         if args.message:
@@ -85,6 +83,12 @@ async def run(args: argparse.Namespace) -> None:
             inbox.put_nowait(args.message)
         await input_loop(history)
         agent.cancel()
+
+
+def welcome() -> None:
+    logo.show()
+    note(f"zero  {config.get('model')}  {os.getcwd()}")
+    note("type / for commands, Ctrl+C clears the input")
 
 
 async def ready() -> bool:

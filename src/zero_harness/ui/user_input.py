@@ -39,6 +39,9 @@ STYLE = Style.from_dict(
     }
 )
 
+RESIZE_SETTLE = 0.15  # seconds after the last resize before the screen is rebuilt
+MAX_REPRINT_LINES = 1000
+
 session: PromptSession | None = None
 live = ""
 live_style = "none"
@@ -113,6 +116,23 @@ class WordWrap(Processor):
         return Transformation(out, lambda i: positions[min(i, len(text))], lambda i: bisect_left(positions, i))
 
 
+class CharacterCount(Processor):
+    """Show how many characters were typed instead of the text, so a pasted key stays hidden and on one row."""
+
+    def apply_transformation(self, ti):
+        size = len(fragment_list_to_text(ti.fragments))
+        shown = f"{size} characters" if size else ""
+        return Transformation([("", shown)], lambda i: len(shown), lambda i: size)
+
+
+async def secret(message: str) -> str | None:
+    """Ask for a secret such as an API key. None if the user cancels."""
+    try:
+        return await PromptSession().prompt_async(message, input_processors=[CharacterCount()])
+    except KeyboardInterrupt, EOFError:
+        return None
+
+
 class CommandCompleter(Completer):
     """Complete /command names, then each word after them with the command's complete(words)."""
 
@@ -136,14 +156,15 @@ class CommandCompleter(Completer):
                 yield Completion(word, start_position=-len(typed))
 
 
-def setup(busy, commands: dict) -> None:
+def setup(busy, commands: dict, reprint) -> None:
     """Create the prompt, pinned to the bottom of the terminal. Top to bottom:
 
     the answer being streamed (right under earlier output, so it reads top to bottom and finished blocks
     land where they streamed), empty space, one blank row that stays when the screen is full,
     working… and the stats, a rule, the input, a rule.
 
-    `commands` maps each /command name to complete(words), for Tab completion.
+    `commands` maps each /command name to complete(words), for Tab completion. reprint() prints the conversation
+    again; a resize calls it.
     """
     global session
 
@@ -159,24 +180,36 @@ def setup(busy, commands: dict) -> None:
         gap = max(width - len(working) - len(stats), 2)
         return [("class:status", f"{working}{' ' * gap}{stats}"[:width])]
 
-    def redraw_on_resize() -> None:
-        """Erase the box and redraw it. Output above the box stays. When the terminal narrows, it rewraps each
-        drawn row longer than the new width onto more rows, so count those rows to find the top of the box."""
-        app, renderer = session.app, session.app.renderer
-        drawn, cursor = renderer._last_screen, renderer._cursor_pos
-        columns = app.output.get_size().columns
-        up = cursor.y
-        if drawn and renderer._last_size and columns < renderer._last_size.columns:
-            up = cursor.x // columns
-            for y in range(cursor.y):
-                row = drawn.data_buffer[y]
-                length = max((x + 1 for x, char in row.items() if char.char != " "), default=0)
-                up += max(1, -(-length // columns))
-        app.output.cursor_up(up)
-        app.output.write_raw("\r")
-        app.output.erase_down()
+    timer, built_for = None, None
+
+    def schedule_rebuild() -> None:
+        """A window drag sends many resizes. Rebuild once, after the last one."""
+        nonlocal timer
+        if timer:
+            timer.cancel()
+        timer = asyncio.get_running_loop().call_later(RESIZE_SETTLE, rebuild)
+
+    def rebuild() -> None:
+        """Clear the screen and scrollback, reprint the conversation at the new width, and redraw the box.
+
+        A terminal rewraps printed rows when it resizes, and how is up to the terminal, so a redraw in place
+        can't know where the old box went and leaves copies.
+        """
+        nonlocal built_for
+        app = session.app
+        # prompt_toolkit also polls the size, so one resize can arrive twice.
+        if not app.is_running or app.output.get_size() == built_for:
+            return
+        built_for = app.output.get_size()
+        with notes.console.capture() as capture:
+            reprint()
+        lines = capture.get().splitlines()[-MAX_REPRINT_LINES:]
+        # Synchronized output (?2026) shows the clear and the reprint as one frame on terminals that support it.
+        app.output.write_raw(
+            "\x1b[?2026h\x1b[H\x1b[2J\x1b[3J" + "".join(f"{line}\r\n" for line in lines) + "\x1b[?2026l"
+        )
         app.output.flush()
-        renderer.reset(leave_alternate_screen=False)
+        app.renderer.reset(leave_alternate_screen=False)
         # The renderer fills the rows below the cursor; this measures them again.
         app._request_absolute_cursor_position()
         app.invalidate()
@@ -201,7 +234,7 @@ def setup(busy, commands: dict) -> None:
         color_depth=ColorDepth.TRUE_COLOR if os.environ.get("COLORTERM") in ("truecolor", "24bit") else None,
     )
     # prompt_toolkit has no public resize hook; it reads this attribute when the prompt starts.
-    session.app._on_resize = redraw_on_resize
+    session.app._on_resize = schedule_rebuild
     input_window = session.app.layout.current_window
     input_window.style = "class:input"
     # Only the empty space at the top may stretch; that is what pins the box to the bottom of the terminal.
