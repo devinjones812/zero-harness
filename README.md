@@ -29,6 +29,7 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 - **Long sessions.** Context is summarized before the window fills. Every session is saved and resumable.
 - **Web search.** Uses OpenAI or Anthropic search, or [Parallel](https://parallel.ai) for other providers.
 - **Your rules.** Reads `~/.zero/AGENTS.md` (symlink it to share with other agents) and the project's `AGENTS.md` or `CLAUDE.md`.
+- **Skills.** Put a skill in `~/.zero/skills/<name>/SKILL.md` (or symlink one). For browser use, install [browser-harness](https://github.com/browser-use/browser-harness) and link its skill; zero then drives your real Chrome, so `auto-review` asks first.
 - **Live prices.** Models, prices, and context sizes come from [models.dev](https://models.dev), refreshed daily.
 
 **Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo`

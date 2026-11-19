@@ -60,7 +60,12 @@ def load_skills() -> str:
         text = path.read_text()
         meta = text.split("---")[1] if text.startswith("---") else ""
         description = next(
-            (line.split(":", 1)[1].strip() for line in meta.splitlines() if line.startswith("description:")), ""
+            (
+                line.split(":", 1)[1].strip().strip("\"'")
+                for line in meta.splitlines()
+                if line.startswith("description:")
+            ),
+            "",
         )
         lines.append(f"- {path.parent.name}: {description} ({path})")
     if not lines:
