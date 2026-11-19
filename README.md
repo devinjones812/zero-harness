@@ -22,36 +22,36 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 
 ## Features
 
-### `[+]` Fixes itself
+### Fixes itself
 Run `/self-improve` when it falls short. A new zero opens in its own source with your session transcript, finds the cause, and proposes fixes. Your conversation reloads with them in place.
 
-### `<->` Any model, switch anytime
+### Any model, switch anytime
 - `/model` shows each provider's newest model per family. The full list is one step away.
 - Switch mid-session. The conversation carries over.
 - Add another provider by asking zero. Any API compatible with OpenAI Responses or Anthropic Messages works, such as [Venice](https://venice.ai).
 
-### `[ok]` Approvals that stay out of your way
+### Approvals that stay out of your way
 - `auto-review`: a cheap reviewer approves routine commands. Needs an OpenAI key (Decisions API) or a `TYPESAFE_API_KEY` (Jev).
 - `ask` and `auto-max` work with any provider.
 - At a prompt, type a reason instead of "no" and the agent changes course.
 
-### `>>` Steer it live
+### Steer it live
 Type while it works; it reads your message before its next step. Thinking streams as it goes, so you can stop it early.
 
-### `[...]` Long sessions
+### Long sessions
 Context is trimmed and summarized before the window fills. Every session is saved and resumable.
 
-### `(?)` Web search
+### Web search
 Uses your provider's search (OpenAI or Anthropic) on its cheapest current model. For other providers, add a [Parallel](https://parallel.ai) key and ask zero to use it.
 
-### `{ }` Your rules
+### Your rules
 zero reads `~/.zero/AGENTS.md` every session, plus the project's `AGENTS.md` or `CLAUDE.md`. Share one file across agents with a symlink:
 
 ```bash
 ln -s ~/path/to/AGENTS.md ~/.zero/AGENTS.md
 ```
 
-### `$` Live prices
+### Live prices
 Models, prices, context sizes, and reasoning levels come from [models.dev](https://models.dev). Cached in `~/.zero/catalog.json`, refreshed at startup once a day.
 
 **Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo`
