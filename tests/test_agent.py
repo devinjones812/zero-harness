@@ -27,19 +27,19 @@ def test_asks_once_for_the_smart_model_and_saves_it(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     monkeypatch.setattr(config, "update", lambda key, value: config.saved.__setitem__(key, value))
     registry.account["anthropic"] = {"claude-haiku-5-5", "claude-opus-5-5"}
-    questions = []
+    preselected = []
 
-    async def ask(question):
-        questions.append(question)
-        return "y"
+    async def picker(default):
+        preselected.append(default)
+        return default
 
-    monkeypatch.setattr(agent.user_input, "ask", ask)
+    monkeypatch.setattr(agent.model_command, "pick_configured", picker)
 
     async def two_at_once():
         return await asyncio.gather(agent.pick("smart"), agent.pick("smart"))
 
     assert asyncio.run(two_at_once()) == ["anthropic/claude-opus-5-5"] * 2
-    assert len(questions) == 1 and "y = anthropic/claude-opus-5-5" in questions[0]
+    assert preselected == ["anthropic/claude-opus-5-5"]  # one picker for both
     assert asyncio.run(agent.pick("current")) == "anthropic/claude-haiku-5-5"
 
 

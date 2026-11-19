@@ -67,10 +67,16 @@ async def pick_provider() -> str | None:
     return await questionary.select("provider:", choices=choices, default=current()[0]).ask_async()
 
 
-async def pick_configured() -> str | None:
-    """Pick a provider/model from the providers that have a key, without changing the current model."""
+async def pick_configured(default: str | None = None) -> str | None:
+    """Pick a provider/model from the providers that have a key, without changing the current model. `default`
+    (provider/model) starts selected."""
     names = [name for name in registry.providers() if registry.has_key(name)]
-    name = names[0] if len(names) == 1 else await questionary.select("provider:", choices=names).ask_async()
+    default_name, default_id = registry.split(default) if default else (None, None)
+    name = (
+        names[0]
+        if len(names) == 1
+        else await questionary.select("provider:", choices=names, default=default_name).ask_async()
+    )
     if not name:
         return None
     try:
@@ -78,13 +84,14 @@ async def pick_configured() -> str | None:
     except (ValueError, *errors.recoverable()) as error:
         note(f"{name}: could not list your models ({error}).")
         return None
-    model_id = await pick_model(name)
+    model_id = await pick_model(name, default_id if name == default_name else None)
     return f"{name}/{model_id}" if model_id else None
 
 
-async def pick_model(name: str) -> str | None:
-    """The newest model of each family, with "more…" for all models, newest first."""
-    selected = current()[1]
+async def pick_model(name: str, selected: str | None = None) -> str | None:
+    """The newest model of each family, with "more…" for all models, newest first. Starts on `selected`, or on the
+    current model."""
+    selected = selected or current()[1]
     latest = listing.latest(name)
     if latest:
         choice = await questionary.select(

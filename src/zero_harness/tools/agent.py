@@ -7,7 +7,6 @@ from zero_harness.commands import model as model_command
 from zero_harness.models import listing, registry
 from zero_harness.prompt import SUBAGENT
 from zero_harness.tools import grep, read_file, runner, web_fetch, web_search
-from zero_harness.ui import user_input
 from zero_harness.ui.notes import note
 
 # Read-only, and no agent tool: subagents can't edit, run commands, or start their own subagents.
@@ -75,8 +74,13 @@ async def pick(model: str) -> str:
         return await exact(model)
     async with choosing:  # parallel subagents ask the user once
         if not config.get(f"{model}_model"):
-            config.update(f"{model}_model", await ask_tier(model))
-            note(f"[agent] saved {model} model: {config.get(f'{model}_model')}. Ask zero to change it.")
+            picked = await ask_tier(model)
+            if not picked:
+                note(f"no {model} model picked; this subagent uses your current model.")
+                return config.get("model")
+            config.update(f"{model}_model", picked)
+            note(f"saved {model} subagent model: {picked}. Ask zero to change it.")
+            return picked
     return config.get(f"{model}_model")
 
 
@@ -111,25 +115,17 @@ async def load_account(name: str) -> None:
             pass
 
 
-async def ask_tier(tier: str) -> str:
+async def ask_tier(tier: str) -> str | None:
+    """Have the user pick the model for a tier, starting on a suggestion. None if they cancel."""
     use, _ = TIERS[tier]
     suggested = await suggest(tier)
-    offer = f"y = {suggested}, " if suggested else ""
-    question = f"{tier} subagent model ({use})? {offer}p = pick, or type provider/model:"
-    while True:
-        answer = (await user_input.ask(question)).strip()
-        if suggested and answer.lower() in ("y", "yes"):
-            return suggested
-        if answer.lower() in ("p", "pick"):
-            async with in_terminal():  # pauses zero's input box so the picker can use the terminal
-                picked = await model_command.pick_configured()
-            if picked:
-                return picked
-            continue
-        try:
-            return await exact(answer)
-        except ValueError as error:
-            note(f"  {error}", style="yellow")
+    note(f'zero wants a "{tier}" subagent, for {use}. Pick the model to use for {tier} subagents; zero saves it.')
+    if suggested:
+        note(
+            f"Preselected: {suggested}, your provider's {'priciest' if tier == 'smart' else 'cheapest'} current model."
+        )
+    async with in_terminal():  # pauses zero's input box so the picker can use the terminal
+        return await model_command.pick_configured(suggested)
 
 
 def effort(model: str) -> str | None:
