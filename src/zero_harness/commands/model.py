@@ -67,6 +67,21 @@ async def pick_provider() -> str | None:
     return await questionary.select("provider:", choices=choices, default=current()[0]).ask_async()
 
 
+async def pick_configured() -> str | None:
+    """Pick a provider/model from the providers that have a key, without changing the current model."""
+    names = [name for name in registry.providers() if registry.has_key(name)]
+    name = names[0] if len(names) == 1 else await questionary.select("provider:", choices=names).ask_async()
+    if not name:
+        return None
+    try:
+        await registry.load_account(name)
+    except (ValueError, *errors.recoverable()) as error:
+        note(f"{name}: could not list your models ({error}).")
+        return None
+    model_id = await pick_model(name)
+    return f"{name}/{model_id}" if model_id else None
+
+
 async def pick_model(name: str) -> str | None:
     """The newest model of each family, with "more…" for all models, newest first."""
     selected = current()[1]

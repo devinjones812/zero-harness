@@ -1,6 +1,9 @@
 import asyncio
 
+from prompt_toolkit.application import in_terminal
+
 from zero_harness import config, errors, usage
+from zero_harness.commands import model as model_command
 from zero_harness.models import listing, registry
 from zero_harness.prompt import SUBAGENT
 from zero_harness.tools import grep, read_file, runner, web_fetch, web_search
@@ -111,15 +114,20 @@ async def load_account(name: str) -> None:
 async def ask_tier(tier: str) -> str:
     use, _ = TIERS[tier]
     suggested = await suggest(tier)
-    question = (
-        f"{tier} model for subagents ({use})? " + (f"y = {suggested}, or " if suggested else "") + "provider/model:"
-    )
+    offer = f"y = {suggested}, " if suggested else ""
+    question = f"{tier} subagent model ({use})? {offer}p = pick, or type provider/model:"
     while True:
         answer = (await user_input.ask(question)).strip()
         if suggested and answer.lower() in ("y", "yes"):
             return suggested
+        if answer.lower() in ("p", "pick"):
+            async with in_terminal():  # pauses zero's input box so the picker can use the terminal
+                picked = await model_command.pick_configured()
+            if picked:
+                return picked
+            continue
         try:
-            return exact(answer)
+            return await exact(answer)
         except ValueError as error:
             note(f"  {error}", style="yellow")
 
