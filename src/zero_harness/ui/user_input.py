@@ -175,11 +175,13 @@ def setup(busy, commands: dict) -> None:
 
     def status_line():
         dots = "." * (int(time.monotonic() * 3) % 3 + 1)
-        working = f"{notes.INDENT}working{dots}" if busy() and not question else ""
+        working = f"{notes.INDENT}working{dots:<3}" if busy() and not question else ""
         stats = usage.status().strip()
         width = session.app.output.get_size().columns - 1
-        gap = max(width - len(working) - len(stats), 2)
-        return [("class:status", f"{working}{' ' * gap}{stats}"[:width])]
+        # The stats stay put: without room for both, drop "working" rather than shift the stats.
+        if len(working) + 2 + len(stats) > width:
+            working = ""
+        return [("class:status", f"{working}{stats:>{width - len(working)}}"[:width])]
 
     timer, built_for = None, None
 
