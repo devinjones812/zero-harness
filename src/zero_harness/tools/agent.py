@@ -122,7 +122,7 @@ async def ask_tier(tier: str) -> str | None:
     note(f'zero wants a "{tier}" subagent, for {use}. Pick the model to use for {tier} subagents; zero saves it.')
     if suggested:
         note(
-            f"Preselected: {suggested}, your provider's {'priciest' if tier == 'smart' else 'cheapest'} current model."
+            f"Preselected: {suggested}, your provider's {'most expensive' if tier == 'smart' else 'cheapest'} current model."
         )
     async with in_terminal():  # pauses zero's input box so the picker can use the terminal
         return await model_command.pick_configured(suggested)
