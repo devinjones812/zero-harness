@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 
 from prompt_toolkit.application import in_terminal
@@ -8,6 +9,7 @@ from zero_harness.commands import model as model_command
 from zero_harness.models import listing, registry
 from zero_harness.tools import bash, edit_file, grep, read_file, runner, web_fetch, web_search
 from zero_harness.ui import user_input
+from zero_harness.ui.agent_log import Log
 from zero_harness.ui.notes import note
 
 # No agent tool for subagents: they can't start their own.
@@ -19,6 +21,7 @@ choosing = asyncio.Lock()
 TIERS = {"smart": ("hard, narrow problems", listing.smartest), "fast": ("simple searches", listing.cheapest)}
 started = 0  # numbers subagents, for their labels
 tasks: dict[str, asyncio.Task] = {}  # running subagents by label
+logs: dict[str, Path] = {}  # every subagent's live log this session, for /watch
 
 SCHEMA = {
     "type": "function",
@@ -71,34 +74,41 @@ async def run(task: str, model: str = "current", edit: bool = False) -> str:
 
 async def background(label: str, model: str, task: str, top: Path | None) -> None:
     """Run a subagent, show it as working below the conversation, and report when done. Cancelling reports nothing."""
-    detail = f"{model}  {' '.join(task.split())}"
+    detail = f"/watch {label.split()[-1]}  {model}  {' '.join(task.split())}"
     user_input.subagents[label] = ("waiting", detail)
+    logs[label] = permissions.SCRATCH / f"{label.replace(' ', '-')}.log"
+    log = Log(logs[label], f"{label}  {model}{'  (editing)' if top else ''}\n{task}")
+    ending = "stopped"
     try:
         async with running:
             user_input.subagents[label] = ("working", detail)
-            report = await (edit_in_worktree(label, model, task, top) if top else read_only(label, model, task))
+            if top:
+                report = await edit_in_worktree(label, model, task, top, log)
+            else:
+                report = await work(model, task, prompt.subagent(workdir.root(), edit=False), READ_ONLY, label, log)
+        ending = "finished"
     except Exception as error:  # noqa: BLE001 - a failed subagent reports its error instead of vanishing
         report = f"error: {type(error).__name__}: {error}"
+        ending = f"failed: {report}"
     finally:
         user_input.subagents.pop(label, None)
         tasks.pop(label, None)
+        log.close(f"{label} {ending}")
     on_finish(f"[{label} finished] Its task: {task}\n\nIts report:\n{report}")
 
 
-async def read_only(label: str, model: str, task: str) -> str:
-    return await work(model, task, prompt.subagent(workdir.root(), edit=False), READ_ONLY, label)
-
-
-async def edit_in_worktree(label: str, model: str, task: str, top: Path) -> str:
+async def edit_in_worktree(label: str, model: str, task: str, top: Path, log: Log) -> str:
     base = await asyncio.to_thread(worktrees.snapshot, top)
     tree = await asyncio.to_thread(worktrees.create, top, base, label)
     try:
         token = workdir.tree.set(tree)
         try:
-            answer = await work(model, task, prompt.subagent(tree.root, edit=True), EDITING, label)
+            answer = await work(model, task, prompt.subagent(tree.root, edit=True), EDITING, label, log)
         finally:
             workdir.tree.reset(token)
-        return answer + await merge_back(tree, base)
+        merged = await merge_back(tree, base)
+        log.write(merged)
+        return answer + merged
     finally:
         await asyncio.to_thread(worktrees.remove, tree)
 
@@ -110,15 +120,15 @@ def cancel_all() -> int:
     return len(tasks)
 
 
-async def work(model: str, task: str, instructions: str, tools: list, label: str) -> str:
-    """Run the subagent's tool loop quietly and return its final answer."""
+async def work(model: str, task: str, instructions: str, tools: list, label: str, log: Log) -> str:
+    """Run the subagent's tool loop, shown only in its log, and return its final answer."""
     schemas = [tool.SCHEMA for tool in tools]
     functions = {tool.SCHEMA["name"]: tool.run for tool in tools}
     history = [{"role": "user", "content": task}]
     spent, text = 0.0, ""
     for rounds in range(1, MAX_ROUNDS + 1):
         reply = await registry.call(
-            model=model, instructions=instructions, history=history, tools=schemas, effort=effort(model)
+            model=model, instructions=instructions, history=history, tools=schemas, effort=effort(model), live=log
         )
         spent += usage.record(reply, conversation=False, model=model)
         history += reply.output
@@ -127,9 +137,12 @@ async def work(model: str, task: str, instructions: str, tools: list, label: str
         if not calls:
             break
         if tools is READ_ONLY:
-            history += await asyncio.gather(*(runner.run(call, functions, show=False) for call in calls))
+            outputs = await asyncio.gather(*(runner.run(call, functions, show=False) for call in calls))
         else:  # edits and commands one at a time, like the main agent's
-            history += [await runner.run(call, functions, show=False) for call in calls]
+            outputs = [await runner.run(call, functions, show=False) for call in calls]
+        for call, output in zip(calls, outputs):
+            log.tool(call["name"], json.loads(call["arguments"]), output["output"])
+        history += outputs
     else:
         text = f"(stopped after {MAX_ROUNDS} rounds)\n{text}"
     note(f"  {label} finished: {model}, {rounds} rounds, ${spent:.2f}")

@@ -12,6 +12,7 @@ from zero_harness.commands import (
     summarize,
     title,
     undo,
+    watch,
 )
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
@@ -24,6 +25,7 @@ COMMANDS = {
     "resume": resume,
     "self-improve": self_improve,
     "reload": reload,
+    "watch": watch,
     "new": new,
     "undo": undo,
     "title": title,
