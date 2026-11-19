@@ -28,7 +28,7 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 - **Live steering.** Type while it works. It reads your message before its next step.
 - **Long sessions.** Context is summarized before the window fills. Every session is saved and resumable.
 - **Web search.** Uses OpenAI or Anthropic search, or [Parallel](https://parallel.ai) for other providers.
-- **Your rules.** Reads `~/.zero/AGENTS.md` (symlink it to share with other agents) and the project's `AGENTS.md` or `CLAUDE.md`.
+- **Your rules.** Reads `~/.zero/AGENTS.md`, which starts as zero's default rules: concise, direct, no flattery. Edit or replace it, or symlink your own to share with other agents. Also reads the project's `AGENTS.md` or `CLAUDE.md`.
 - **Skills.** Put a skill in `~/.zero/skills/<name>/SKILL.md` (or symlink one). For browser use, install [browser-harness](https://github.com/browser-use/browser-harness) and link its skill; zero then drives your real Chrome, so `auto-review` asks first.
 - **Live prices.** Models, prices, and context sizes come from [models.dev](https://models.dev), refreshed daily.
 

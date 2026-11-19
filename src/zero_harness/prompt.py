@@ -7,13 +7,17 @@ from zero_harness import config
 from zero_harness.permissions import SCRATCH
 
 USER_RULES = config.HOME / "AGENTS.md"
+DEFAULT_RULES = Path(__file__).with_name("default_rules.md")
 PROJECT_RULES = ["AGENTS.md", "CLAUDE.md"]
 SKILLS = config.HOME / "skills"
 GIT_STATUS_LINES = 30
 
 
 def load_user_rules() -> str:
-    """Return the user's AGENTS.md text without frontmatter, or "" if there is none."""
+    """Return the user's AGENTS.md text without frontmatter. On first run, start it from zero's default rules."""
+    if not USER_RULES.exists() and not USER_RULES.is_symlink():
+        USER_RULES.parent.mkdir(parents=True, exist_ok=True)
+        USER_RULES.write_text(DEFAULT_RULES.read_text())
     if not USER_RULES.is_file():
         return ""
     text = USER_RULES.read_text()
