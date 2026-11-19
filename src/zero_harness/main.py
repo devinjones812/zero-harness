@@ -100,7 +100,7 @@ async def ready() -> bool:
         return False
     try:
         await models.load_account(name)  # so Tab in /model offers only usable models
-    except errors.RECOVERABLE:
+    except errors.recoverable():
         pass
     return True
 
@@ -155,7 +155,7 @@ async def agent_loop(history: list) -> None:
             if asyncio.current_task().cancelling():
                 raise
             note("[interrupted] Stopped this turn.")
-        except errors.RECOVERABLE as error:
+        except errors.recoverable() as error:
             errors.report(error)
         except Exception:  # noqa: BLE001 - one failed turn must not crash zero
             note(traceback.format_exc(), style="red")

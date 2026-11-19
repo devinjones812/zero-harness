@@ -1,12 +1,17 @@
 """OpenAI's Responses API, also served by many compatible providers. History is already in its format."""
 
-from openai import AsyncOpenAI
+from typing import TYPE_CHECKING
 
 from zero_harness.errors import StreamError
 from zero_harness.models.reply import Reply, Usage
 
+if TYPE_CHECKING:
+    from openai import AsyncOpenAI
+
 
 def client(base_url: str | None, key: str) -> AsyncOpenAI:
+    from openai import AsyncOpenAI
+
     return AsyncOpenAI(base_url=base_url, api_key=key, max_retries=4)
 
 

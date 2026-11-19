@@ -4,10 +4,12 @@ Targets Claude models with adaptive thinking and effort levels (Claude Opus 4.6 
 """
 
 import json
-
-from anthropic import AsyncAnthropic
+from typing import TYPE_CHECKING
 
 from zero_harness.models.reply import Reply, Usage
+
+if TYPE_CHECKING:
+    from anthropic import AsyncAnthropic
 
 # A hard limit on thinking plus text. Anthropic suggests 64k to start at xhigh and max effort.
 MAX_TOKENS = 64_000
@@ -15,6 +17,8 @@ THINKING = ("thinking", "redacted_thinking")
 
 
 def client(base_url: str | None, key: str) -> AsyncAnthropic:
+    from anthropic import AsyncAnthropic
+
     return AsyncAnthropic(base_url=base_url, api_key=key, max_retries=4)
 
 

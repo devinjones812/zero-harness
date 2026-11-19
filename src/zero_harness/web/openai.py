@@ -1,8 +1,6 @@
 import json
 from urllib.parse import urldefrag
 
-from openai import OpenAI
-
 from zero_harness.models import listing
 
 
@@ -25,6 +23,8 @@ def fetch(url: str, objective: str | None) -> str:
 
 
 def _cited_answer(instructions: str, data: dict[str, str | None], *, required_url: str | None = None) -> str:
+    from openai import OpenAI
+
     model = listing.cheapest("openai")
     if model is None:
         raise RuntimeError("no OpenAI model prices from models.dev, so no cheap model to search with.")

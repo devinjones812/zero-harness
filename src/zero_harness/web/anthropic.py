@@ -1,7 +1,5 @@
 import json
 
-from anthropic import Anthropic
-
 from zero_harness.models import listing
 
 SEARCH = {"type": "web_search_20250305", "name": "web_search", "max_uses": 5}
@@ -27,6 +25,8 @@ def fetch(url: str, objective: str | None) -> str:
 
 
 def _cited_answer(instructions: str, data: dict, tool: dict, *, required_url: str | None = None) -> str:
+    from anthropic import Anthropic
+
     model = listing.cheapest("anthropic")
     if model is None:
         raise RuntimeError("no Anthropic model prices from models.dev, so no cheap model to search with.")

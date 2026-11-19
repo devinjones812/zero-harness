@@ -33,7 +33,7 @@ async def run(history: list, args: str) -> None:
         return
     try:
         await registry.load_account(name)
-    except (ValueError, *errors.RECOVERABLE) as error:
+    except (ValueError, *errors.recoverable()) as error:
         note(f"{name}: could not list your models ({error}).")
         return
     if len(words) > 1 and words[1] not in registry.account[name]:

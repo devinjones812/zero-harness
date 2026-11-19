@@ -2,7 +2,6 @@ import os
 import re
 from pathlib import Path
 
-from openai import OpenAI
 from typesafe_sdk import Choice, TypeSafeClient
 
 from zero_harness import config
@@ -56,6 +55,8 @@ def _jev_clear(state: str) -> float:
 
 
 def _openai_clear(state: str) -> float | None:
+    from openai import OpenAI
+
     with OpenAI(timeout=10, max_retries=0) as client:
         decision = client.decisions.create(
             model=DECISIONS_MODEL,

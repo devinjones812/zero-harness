@@ -1,5 +1,4 @@
-import anthropic
-import openai
+import sys
 
 from zero_harness.ui.notes import note
 
@@ -8,7 +7,11 @@ class StreamError(Exception):
     """The response stream ended without a completed response."""
 
 
-RECOVERABLE = (openai.APIError, anthropic.APIError, StreamError)
+def recoverable() -> tuple[type[Exception], ...]:
+    """API errors a turn survives. SDKs load on first use, so only loaded ones can have raised."""
+    sdks = [sys.modules[name] for name in ("openai", "anthropic") if name in sys.modules]
+    return (*(sdk.APIError for sdk in sdks), StreamError)
+
 
 INTERRUPTED = "interrupted: this tool did not run or did not finish."
 
