@@ -70,3 +70,10 @@ def cheapest(name: str) -> str | None:
     entries = known(name)
     priced = [model_id for model_id in latest(name) if entries[model_id]["cost"]]
     return min(priced, key=lambda model_id: entries[model_id]["cost"]["input"], default=None)
+
+
+def smartest(name: str) -> str | None:
+    """The provider's most capable current model, taken to be its most expensive. None if prices are unknown."""
+    entries = known(name)
+    priced = [model_id for model_id in latest(name) if entries[model_id]["cost"]]
+    return max(priced, key=lambda model_id: entries[model_id]["cost"]["output"], default=None)

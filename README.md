@@ -26,13 +26,14 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 - **Any model.** `/model` lists each provider's newest models. Switch mid-session without losing context. Ask zero to add any OpenAI- or Anthropic-compatible provider, such as [Venice](https://venice.ai).
 - **Light approvals.** `auto-review` lets a cheap reviewer approve routine commands (needs an OpenAI or `TYPESAFE_API_KEY` key). To deny, type a reason and the agent changes course.
 - **Live steering.** Type while it works. It reads your message before its next step.
+- **Subagents.** zero can hand read-only tasks (explore, research, diagnose) to subagents that run in parallel, on your model, its provider's smartest, or its cheapest. Ask for them, or zero decides.
 - **Long sessions.** Context is summarized before the window fills. Every session is saved and resumable.
 - **Web search.** Uses OpenAI or Anthropic search, or [Parallel](https://parallel.ai) for other providers.
 - **Your rules.** Reads `~/.zero/AGENTS.md`, which starts as zero's default rules: concise, direct, no flattery. Edit or replace it, or symlink your own to share with other agents. Also reads the project's `AGENTS.md` or `CLAUDE.md`.
 - **Skills.** Put a skill in `~/.zero/skills/<name>/SKILL.md` (or symlink one). For browser use, install [browser-harness](https://github.com/browser-use/browser-harness) and link its skill; zero then drives your real Chrome, so `auto-review` asks first.
 - **Live prices.** Models, prices, and context sizes come from [models.dev](https://models.dev), refreshed daily.
 
-**Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo`
+**Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo` | `agent`
 
 ## Commands
 

@@ -9,16 +9,19 @@ priced = True
 input_tokens: int | None = 0
 
 
-def record(reply: Reply, conversation: bool = True) -> None:
-    """Add a reply's cost to the session. Conversation calls also set the current context size."""
+def record(reply: Reply, conversation: bool = True, model: str | None = None) -> float:
+    """Add a reply's cost to the session, priced for `model` or the configured model, and return it. Conversation
+    calls also set the current context size."""
     global cost, priced, input_tokens
     if conversation:
         input_tokens = reply.usage.input_tokens
-    rates = listing.info(config.get("model")).get("cost")
+    rates = listing.info(model or config.get("model")).get("cost")
     if rates is None:
         priced = False
-        return
-    cost += dollars(reply.usage, rates)
+        return 0.0
+    spent = dollars(reply.usage, rates)
+    cost += spent
+    return spent
 
 
 def dollars(usage: Usage, rates: dict) -> float:

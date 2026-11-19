@@ -183,8 +183,7 @@ async def run_turn(history: list) -> None:
         if not calls:
             return
 
-        for call in calls:
-            history.append(await tools.run(call))
+        history += await tools.run_all(calls)
 
     note(f"[limit] stopped after {max_rounds} tool rounds. Send a message to continue.")
 

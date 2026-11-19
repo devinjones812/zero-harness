@@ -1,0 +1,64 @@
+import asyncio
+import json
+
+from zero_harness import config, usage
+from zero_harness.models import registry
+from zero_harness.models.reply import Reply, Usage
+from zero_harness.tools import agent
+from zero_harness.tools import registry as tools
+
+
+def reply(*output):
+    return Reply(model="m", output=list(output), usage=Usage(input_tokens=1000, cached_tokens=0, output_tokens=100))
+
+
+def call(name, call_id, **args):
+    return {"type": "function_call", "call_id": call_id, "name": name, "arguments": json.dumps(args)}
+
+
+def message(text):
+    return {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": text}]}
+
+
+def test_picks_smart_fast_or_current_model():
+    config.saved["model"] = "anthropic/claude-haiku-5-5"
+    assert agent.pick("smart") == "anthropic/claude-opus-5-5"
+    assert agent.pick("fast") == "anthropic/claude-haiku-5-5"
+    assert agent.pick("current") == "anthropic/claude-haiku-5-5"
+
+
+def test_subagents_are_read_only_and_cannot_start_subagents():
+    assert set(agent.FUNCTIONS) == {"read_file", "grep", "web_search", "web_fetch"}
+
+
+def test_runs_tools_until_it_answers_and_counts_its_cost(monkeypatch):
+    config.saved["model"] = "anthropic/claude-opus-5-5"
+    replies = iter([reply(call("grep", "1", pattern="x")), reply(message("found it at a.py:3"))])
+    seen = []
+
+    async def fake_call(*, model, history, tools, **_):
+        seen.append((model, [schema["name"] for schema in tools], len(history)))
+        return next(replies)
+
+    monkeypatch.setattr(registry, "call", fake_call)
+    monkeypatch.setitem(agent.FUNCTIONS, "grep", lambda pattern: "a.py:3:x")
+    monkeypatch.setattr(usage, "cost", 0.0)
+    answer = asyncio.run(agent.run("find x", model="smart"))
+    assert answer == "found it at a.py:3"
+    assert seen[0] == ("anthropic/claude-opus-5-5", ["read_file", "grep", "web_search", "web_fetch"], 1)
+    assert seen[1][2] == 3  # task, grep call, grep output
+    assert usage.cost > 0
+
+
+def test_subagents_run_in_parallel_and_outputs_keep_call_order(monkeypatch):
+    both_running = asyncio.Barrier(2)
+
+    async def fake_agent(task, model="current"):
+        await asyncio.wait_for(both_running.wait(), timeout=1)  # times out unless the two run together
+        return task
+
+    monkeypatch.setitem(tools.FUNCTIONS, "agent", fake_agent)
+    monkeypatch.setitem(tools.FUNCTIONS, "todo", lambda items: "ok")
+    calls = [call("agent", "a", task="one"), call("todo", "t", items=[]), call("agent", "b", task="two")]
+    outputs = asyncio.run(tools.run_all(calls))
+    assert [output["output"] for output in outputs] == ["one", "ok", "two"]

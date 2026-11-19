@@ -7,7 +7,7 @@ import questionary
 from zero_harness import sessions
 from zero_harness.commands import self_improve
 from zero_harness.tools import todo
-from zero_harness.tools.registry import summary
+from zero_harness.tools.runner import summary
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
 

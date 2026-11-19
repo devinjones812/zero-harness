@@ -77,9 +77,9 @@ def _client(module, base_url: str | None, key: str):
     return module.client(base_url, key)
 
 
-async def call(*, instructions, history, tools=(), effort=None, tool_choice=None, live=None) -> Reply:
-    """Send history to the configured model. `live` shows the reply as it streams; None means no display."""
-    name, model_id = split(config.get("model"))
+async def call(*, instructions, history, tools=(), effort=None, tool_choice=None, live=None, model=None) -> Reply:
+    """Send history to `model`, or the configured model. `live` shows the reply as it streams; None means no display."""
+    name, model_id = split(model or config.get("model"))
     return await api(name).call(
         client(name),
         model_id,
