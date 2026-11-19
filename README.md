@@ -22,37 +22,14 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 
 ## Features
 
-### Fixes itself
-Run `/self-improve` when it falls short. A new zero opens in its own source with your session transcript, finds the cause, and proposes fixes. Your conversation reloads with them in place.
-
-### Any model, switch anytime
-- `/model` shows each provider's newest model per family. The full list is one step away.
-- Switch mid-session. The conversation carries over.
-- Add another provider by asking zero. Any API compatible with OpenAI Responses or Anthropic Messages works, such as [Venice](https://venice.ai).
-
-### Approvals that stay out of your way
-- `auto-review`: a cheap reviewer approves routine commands. Needs an OpenAI key (Decisions API) or a `TYPESAFE_API_KEY` (Jev).
-- `ask` and `auto-max` work with any provider.
-- At a prompt, type a reason instead of "no" and the agent changes course.
-
-### Steer it live
-Type while it works; it reads your message before its next step. Thinking streams as it goes, so you can stop it early.
-
-### Long sessions
-Context is trimmed and summarized before the window fills. Every session is saved and resumable.
-
-### Web search
-Uses your provider's search (OpenAI or Anthropic) on its cheapest current model. For other providers, add a [Parallel](https://parallel.ai) key and ask zero to use it.
-
-### Your rules
-zero reads `~/.zero/AGENTS.md` every session, plus the project's `AGENTS.md` or `CLAUDE.md`. Share one file across agents with a symlink:
-
-```bash
-ln -s ~/path/to/AGENTS.md ~/.zero/AGENTS.md
-```
-
-### Live prices
-Models, prices, context sizes, and reasoning levels come from [models.dev](https://models.dev). Cached in `~/.zero/catalog.json`, refreshed at startup once a day.
+- **Self-repair.** `/self-improve` opens a new zero in its own source with your transcript. It finds the cause, fixes it, and reloads your session.
+- **Any model.** `/model` lists each provider's newest models. Switch mid-session without losing context. Ask zero to add any OpenAI- or Anthropic-compatible provider, such as [Venice](https://venice.ai).
+- **Light approvals.** `auto-review` lets a cheap reviewer approve routine commands (needs an OpenAI or `TYPESAFE_API_KEY` key). To deny, type a reason and the agent changes course.
+- **Live steering.** Type while it works. It reads your message before its next step.
+- **Long sessions.** Context is summarized before the window fills. Every session is saved and resumable.
+- **Web search.** Uses OpenAI or Anthropic search, or [Parallel](https://parallel.ai) for other providers.
+- **Your rules.** Reads `~/.zero/AGENTS.md` (symlink it to share with other agents) and the project's `AGENTS.md` or `CLAUDE.md`.
+- **Live prices.** Models, prices, and context sizes come from [models.dev](https://models.dev), refreshed daily.
 
 **Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo`
 
