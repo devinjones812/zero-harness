@@ -7,7 +7,7 @@ from zero_harness import config
 from zero_harness.permissions import SCRATCH
 
 USER_RULES = config.HOME / "AGENTS.md"
-DEFAULT_RULES = Path(__file__).with_name("default_rules.md")
+DEFAULT_RULES = Path(__file__).parent / "defaults" / "rules.md"
 PROJECT_RULES = ["AGENTS.md", "CLAUDE.md"]
 SKILLS = config.HOME / "skills"
 GIT_STATUS_LINES = 30
