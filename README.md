@@ -31,6 +31,7 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 - **Steer it live.** Type while it works and it reads your message before its next step. Its thinking streams as it goes, so you can stop it early.
 - **Long sessions.** It trims and summarizes context before the window fills. Every session is saved and resumable.
 - **Web search** with your model's provider: OpenAI or Anthropic search, run on their cheapest current model. For other providers, or if you prefer it, add a [Parallel](https://parallel.ai) key and ask zero to use it.
+- **Your rules.** zero reads `~/.zero/AGENTS.md` in every session, plus the project's `AGENTS.md` or `CLAUDE.md`. To share one file with other agents, symlink it: `ln -s ~/path/to/AGENTS.md ~/.zero/AGENTS.md`.
 - **Live prices.** Model lists, prices, context sizes, and reasoning levels come from [models.dev](https://models.dev), cached in `~/.zero/catalog.json` and refreshed at startup once a day.
 
 Tools: `bash`, `job`, `read_file`, `edit_file`, `grep`, `web_search`, `web_fetch`, `todo`.
