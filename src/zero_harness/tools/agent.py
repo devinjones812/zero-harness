@@ -1,9 +1,10 @@
 import asyncio
 
-from zero_harness import config, usage
+from zero_harness import config, errors, usage
 from zero_harness.models import listing, registry
 from zero_harness.prompt import SUBAGENT
 from zero_harness.tools import grep, read_file, runner, web_fetch, web_search
+from zero_harness.ui import user_input
 from zero_harness.ui.notes import note
 
 # Read-only, and no agent tool: subagents can't edit, run commands, or start their own subagents.
@@ -12,6 +13,8 @@ SCHEMAS = [tool.SCHEMA for tool in TOOLS]
 FUNCTIONS = {tool.SCHEMA["name"]: tool.run for tool in TOOLS}
 MAX_ROUNDS = 30
 running = asyncio.Semaphore(4)  # at most this many subagents at once
+choosing = asyncio.Lock()
+TIERS = {"smart": ("hard, narrow problems", listing.smartest), "fast": ("simple searches", listing.cheapest)}
 
 SCHEMA = {
     "type": "function",
@@ -27,10 +30,10 @@ SCHEMA = {
             "task": {"type": "string", "description": "A self-contained brief: goal, context, and what to return."},
             "model": {
                 "type": "string",
-                "enum": ["current", "smart", "fast"],
                 "description": (
-                    "current (default): your model. smart: the provider's most capable model, for a narrow, hard "
-                    "problem. fast: its cheapest model, for simple searches."
+                    "current (default): your model. smart: the user's model for narrow, hard problems. fast: the "
+                    "user's cheap model for simple searches. Or an exact provider/model the user names, such as "
+                    "openai/gpt-6.2-astra."
                 ),
             },
         },
@@ -40,7 +43,7 @@ SCHEMA = {
 
 
 async def run(task: str, model: str = "current") -> str:
-    chosen = pick(model)
+    chosen = await pick(model)
     history = [{"role": "user", "content": task}]
     spent, text = 0.0, ""
     async with running:
@@ -61,13 +64,64 @@ async def run(task: str, model: str = "current") -> str:
     return text or "(the subagent gave no answer)"
 
 
-def pick(model: str) -> str:
-    """The model for a subagent: the current one, or the provider's smartest or cheapest current model."""
-    current = config.get("model")
-    name, _ = registry.split(current)
-    find = {"smart": listing.smartest, "fast": listing.cheapest}.get(model)
-    found = find(name) if find else None
-    return f"{name}/{found}" if found else current
+async def pick(model: str) -> str:
+    """The model for a subagent: the current one, the user's smart or fast model, or an exact provider/model."""
+    if model in ("", "current"):
+        return config.get("model")
+    if model not in TIERS:
+        return await exact(model)
+    async with choosing:  # parallel subagents ask the user once
+        if not config.get(f"{model}_model"):
+            config.update(f"{model}_model", await ask_tier(model))
+            note(f"[agent] saved {model} model: {config.get(f'{model}_model')}. Ask zero to change it.")
+    return config.get(f"{model}_model")
+
+
+async def exact(model: str) -> str:
+    """Check that a provider/model exists and the key can use it. Raises ValueError with what to do instead."""
+    name, model_id = registry.split(model)
+    if not registry.has_key(name):
+        raise ValueError(f"no API key for {name}. Use a provider with a key, or ask the user to add one with /model.")
+    await load_account(name)
+    if name in registry.account and model_id not in registry.account[name]:
+        raise ValueError(f"{name} has no model {model_id!r} for this key. Options: {', '.join(listing.latest(name))}")
+    return f"{name}/{model_id}"
+
+
+async def suggest(tier: str) -> str | None:
+    """The current provider's smartest or cheapest model, or else the first other provider with a key that has one."""
+    current, _ = registry.split(config.get("model"))
+    for name in [current, *registry.providers()]:
+        if registry.has_key(name):
+            await load_account(name)
+            if found := TIERS[tier][1](name):
+                return f"{name}/{found}"
+    return None
+
+
+async def load_account(name: str) -> None:
+    """Learn which models the key can use, once. zero loads only the current provider's at startup."""
+    if name not in registry.account:
+        try:
+            await registry.load_account(name)
+        except errors.recoverable():
+            pass
+
+
+async def ask_tier(tier: str) -> str:
+    use, _ = TIERS[tier]
+    suggested = await suggest(tier)
+    question = (
+        f"{tier} model for subagents ({use})? " + (f"y = {suggested}, or " if suggested else "") + "provider/model:"
+    )
+    while True:
+        answer = (await user_input.ask(question)).strip()
+        if suggested and answer.lower() in ("y", "yes"):
+            return suggested
+        try:
+            return exact(answer)
+        except ValueError as error:
+            note(f"  {error}", style="yellow")
 
 
 def effort(model: str) -> str | None:

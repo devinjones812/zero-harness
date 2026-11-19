@@ -13,6 +13,8 @@ DEFAULTS = {
     "model": None,  # the user picks one on first run
     "effort": "medium",
     "max_tool_rounds": 50,
+    "smart_model": None,  # subagent models; the user picks each the first time it is needed
+    "fast_model": None,
     "providers": {},
 }
 # Command reviewers for auto-review mode and the keys they need, in default order.

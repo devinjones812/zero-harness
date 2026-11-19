@@ -1,6 +1,8 @@
 import asyncio
 import json
 
+import pytest
+
 from zero_harness import config, usage
 from zero_harness.models import registry
 from zero_harness.models.reply import Reply, Usage
@@ -20,11 +22,36 @@ def message(text):
     return {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": text}]}
 
 
-def test_picks_smart_fast_or_current_model():
+def test_asks_once_for_the_smart_model_and_saves_it(monkeypatch):
     config.saved["model"] = "anthropic/claude-haiku-5-5"
-    assert agent.pick("smart") == "anthropic/claude-opus-5-5"
-    assert agent.pick("fast") == "anthropic/claude-haiku-5-5"
-    assert agent.pick("current") == "anthropic/claude-haiku-5-5"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    monkeypatch.setattr(config, "update", lambda key, value: config.saved.__setitem__(key, value))
+    registry.account["anthropic"] = {"claude-haiku-5-5", "claude-opus-5-5"}
+    questions = []
+
+    async def ask(question):
+        questions.append(question)
+        return "y"
+
+    monkeypatch.setattr(agent.user_input, "ask", ask)
+
+    async def two_at_once():
+        return await asyncio.gather(agent.pick("smart"), agent.pick("smart"))
+
+    assert asyncio.run(two_at_once()) == ["anthropic/claude-opus-5-5"] * 2
+    assert len(questions) == 1 and "y = anthropic/claude-opus-5-5" in questions[0]
+    assert asyncio.run(agent.pick("current")) == "anthropic/claude-haiku-5-5"
+
+
+def test_exact_model_from_another_provider(monkeypatch):
+    config.saved["model"] = "anthropic/claude-haiku-5-5"
+    monkeypatch.setenv("OPENAI_API_KEY", "k")
+    registry.account["openai"] = {"gpt-6.2-astra"}
+    assert asyncio.run(agent.pick("openai/gpt-6.2-astra")) == "openai/gpt-6.2-astra"
+    with pytest.raises(ValueError, match="no model 'gpt-typo'"):
+        asyncio.run(agent.pick("openai/gpt-typo"))
+    with pytest.raises(ValueError, match="no API key for anthropic"):
+        asyncio.run(agent.pick("anthropic/claude-opus-5-5"))
 
 
 def test_subagents_are_read_only_and_cannot_start_subagents():
@@ -32,7 +59,8 @@ def test_subagents_are_read_only_and_cannot_start_subagents():
 
 
 def test_runs_tools_until_it_answers_and_counts_its_cost(monkeypatch):
-    config.saved["model"] = "anthropic/claude-opus-5-5"
+    config.saved["model"] = "anthropic/claude-haiku-5-5"
+    config.saved["smart_model"] = "anthropic/claude-opus-5-5"
     replies = iter([reply(call("grep", "1", pattern="x")), reply(message("found it at a.py:3"))])
     seen = []
 
