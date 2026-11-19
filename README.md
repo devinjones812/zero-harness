@@ -26,7 +26,6 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 - **Any model.** `/model` lists each provider's newest models. Switch mid-session without losing context. Ask zero to add any OpenAI- or Anthropic-compatible provider, such as [Venice](https://venice.ai).
 - **Light approvals.** `auto-review` lets a cheap reviewer approve routine commands (needs an OpenAI or `TYPESAFE_API_KEY` key). To deny, type a reason and the agent changes course.
 - **Live steering.** Type while it works. It reads your message before its next step.
-- **Subagents.** zero can hand read-only tasks (explore, research, diagnose) to subagents that run in parallel, on your model, a smart or fast model you pick the first time one is needed, or any model you name (e.g. `openai/gpt-6.2-astra`). Ask for them, or zero decides.
 - **Long sessions.** Context is summarized before the window fills. Every session is saved and resumable.
 - **Web search.** Uses OpenAI or Anthropic search, or [Parallel](https://parallel.ai) for other providers.
 - **Your rules.** Reads `~/.zero/AGENTS.md`, which starts as zero's default rules: concise, direct, no flattery. Edit or replace it, or symlink your own to share with other agents. Also reads the project's `AGENTS.md` or `CLAUDE.md`.
@@ -34,6 +33,21 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 - **Live prices.** Models, prices, and context sizes come from [models.dev](https://models.dev), refreshed daily.
 
 **Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo` | `agent`
+
+## Subagents
+
+zero can hand a task to a subagent: a separate model run that gets only a brief and returns only its answer. This keeps zero's own context small and lets work run in parallel. Ask for subagents, or zero uses them when a task fits.
+
+- **Read-only.** Subagents can search, read files, and use the web. Only zero itself edits files and runs commands, so subagents never need approval or conflict.
+- **Parallel.** Up to 4 at once, each with its own one-line status.
+- **Any model.** Each subagent runs on one of:
+  - your current model (the default)
+  - `smart`: for hard, narrow problems, such as one failing test
+  - `fast`: for simple searches
+  - any model you name, such as "use openai/gpt-6.2-astra", even from another provider
+
+  zero asks you to pick the `smart` and `fast` models the first time it needs one, and saves your choice. Ask zero to change them.
+- **Costs** count toward the session total in the status line.
 
 ## Commands
 
