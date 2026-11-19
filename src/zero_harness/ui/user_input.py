@@ -19,6 +19,7 @@ from prompt_toolkit.layout import (
     Window,
 )
 from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.layout.processors import Processor, Transformation
 from prompt_toolkit.layout.utils import explode_text_fragments
@@ -41,6 +42,7 @@ STYLE = Style.from_dict(
 
 RESIZE_SETTLE = 0.15  # seconds after the last resize before the screen is rebuilt
 MAX_REPRINT_LINES = 2000
+MENU_ROWS = 8
 CUT_NOTE = "(earlier output is hidden after a resize; /history shows all of it)"
 
 session: PromptSession | None = None
@@ -245,7 +247,8 @@ def setup(busy, commands: dict) -> None:
                 Window(FormattedTextControl(streamed), dont_extend_height=True),
                 filter=Condition(lambda: bool(live.strip())),
             ),
-            Window(),
+            # The menu floats over this space, so while it is open, ask for enough rows to show it whole.
+            Window(height=lambda: Dimension(min=MENU_ROWS if session.default_buffer.complete_state else 0)),
             Window(height=1),
             Window(FormattedTextControl(status_line), height=1),
             rule,
@@ -254,7 +257,7 @@ def setup(busy, commands: dict) -> None:
         ]
     )
     # The completion menu floats over the whole screen; inside the one-row input it has no room to open.
-    menu = Float(xcursor=True, ycursor=True, content=CompletionsMenu(max_height=8, scroll_offset=1))
+    menu = Float(xcursor=True, ycursor=True, content=CompletionsMenu(max_height=MENU_ROWS, scroll_offset=1))
     session.app.layout = Layout(FloatContainer(screen, [menu]), focused_element=input_window)
 
 
