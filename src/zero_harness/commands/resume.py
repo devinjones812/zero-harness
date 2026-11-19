@@ -11,7 +11,7 @@ from zero_harness.tools.registry import summary
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Pick a saved session and continue it."
+DESCRIPTION = "continue a saved session"
 
 
 async def run(history: list, args: str) -> None:

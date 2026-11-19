@@ -32,11 +32,14 @@ COMMANDS = {
 
 
 def options() -> dict:
-    """Each command's name and a function from the words typed after it to the next word's options, for Tab completion.
+    """For Tab completion: each command's name, its description, and a function from the words typed after it to
+    the next word's options.
 
     Commands define complete(words), or OPTIONS for a single fixed word.
     """
-    return {name: getattr(command, "complete", fixed(command)) for name, command in COMMANDS.items()}
+    return {
+        name: (command.DESCRIPTION, getattr(command, "complete", fixed(command))) for name, command in COMMANDS.items()
+    }
 
 
 def fixed(command):

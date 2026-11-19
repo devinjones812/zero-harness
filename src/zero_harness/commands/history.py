@@ -4,7 +4,7 @@ from prompt_toolkit.application import run_in_terminal
 
 from zero_harness.ui import notes
 
-DESCRIPTION = "Show everything printed this session in a pager. q returns."
+DESCRIPTION = "view full output"
 ANYTIME = True
 
 

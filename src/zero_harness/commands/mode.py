@@ -3,11 +3,7 @@ import questionary
 from zero_harness import config
 from zero_harness.ui.notes import note
 
-DESCRIPTION = (
-    "Approval mode. ask: ask before every command and edit. auto-review: a reviewer approves routine commands "
-    "(needs an OpenAI or TypeSafe key). auto-max: everything runs except known destructive commands. "
-    "/mode <name>, or /mode alone for a menu."
-)
+DESCRIPTION = "set approval mode"
 MODES = OPTIONS = ["ask", "auto-review", "auto-max"]
 NEEDS_REVIEWER = "needs an OpenAI or TypeSafe key"
 NO_REVIEWER = (

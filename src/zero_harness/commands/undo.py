@@ -3,7 +3,7 @@ import os
 from zero_harness import checkpoints
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Undo the file edits from the last turn that edited files. Run again to go further back."
+DESCRIPTION = "undo last edits"
 
 
 def run(history: list, args: str) -> None:

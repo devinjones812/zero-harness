@@ -9,7 +9,7 @@ from zero_harness.prompt import REPO
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Open a new zero in its own repo to find and fix what went wrong here. Add a note: /self-improve <note>."
+DESCRIPTION = "fix zero itself"
 # Runs even while the agent works. It only reads the session and opens a window, so the turn continues.
 ANYTIME = True
 

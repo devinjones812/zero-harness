@@ -146,15 +146,14 @@ class CommandCompleter(Completer):
             return
         name, space, rest = text[1:].partition(" ")
         if not space:
-            words, typed = [f"/{name}" for name in self.commands], text
+            for name, (description, _) in self.commands.items():
+                if f"/{name}".startswith(text):
+                    yield Completion(f"/{name}", start_position=-len(text), display_meta=description)
         elif name in self.commands:
             *before, typed = rest.split(" ")
-            words = self.commands[name](before)
-        else:
-            return
-        for word in words:
-            if word.startswith(typed):
-                yield Completion(word, start_position=-len(typed))
+            for word in self.commands[name][1](before):
+                if word.startswith(typed):
+                    yield Completion(word, start_position=-len(typed))
 
 
 def setup(busy, commands: dict) -> None:
@@ -164,7 +163,7 @@ def setup(busy, commands: dict) -> None:
     land where they streamed), empty space, one blank row that stays when the screen is full,
     working… and the stats, a rule, the input, a rule.
 
-    `commands` maps each /command name to complete(words), for Tab completion.
+    `commands` maps each /command name to (description, complete(words)), for Tab completion.
     """
     global session
 

@@ -2,7 +2,7 @@ import questionary
 
 from zero_harness import jobs
 
-DESCRIPTION = "Restart zero to apply code changes, then continue this conversation."
+DESCRIPTION = "restart, keep conversation"
 
 requested = False
 

@@ -8,7 +8,7 @@ from zero_harness.models import listing, registry
 from zero_harness.ui import user_input
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Switch models: /model picks a provider, model, and reasoning. /model <provider> <model> skips ahead."
+DESCRIPTION = "switch model"
 MORE = "more…"
 
 

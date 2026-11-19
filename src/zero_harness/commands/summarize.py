@@ -1,7 +1,7 @@
 from zero_harness import context
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Replace the conversation with a summary to free up context."
+DESCRIPTION = "summarize to free context"
 
 
 async def run(history: list, args: str) -> None:

@@ -4,7 +4,7 @@ from zero_harness import config
 from zero_harness.models import listing
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Set reasoning: /reasoning <level>, or /reasoning alone for a menu. Levels depend on the model."
+DESCRIPTION = "set reasoning level"
 
 
 def complete(words: list[str]) -> list[str]:

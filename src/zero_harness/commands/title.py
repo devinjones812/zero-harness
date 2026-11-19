@@ -1,7 +1,7 @@
 from zero_harness import sessions
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Rename this session. /title shows the current title; /title <new title> renames it."
+DESCRIPTION = "rename session"
 
 
 def run(history: list, args: str) -> None:

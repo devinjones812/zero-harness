@@ -1,7 +1,7 @@
 from zero_harness import jobs, sessions
 from zero_harness.ui.notes import note
 
-DESCRIPTION = "Start a new session. The current one stays saved for /resume."
+DESCRIPTION = "start a new session"
 
 
 def run(history: list, args: str) -> None:
