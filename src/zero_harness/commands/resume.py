@@ -6,7 +6,7 @@ import questionary
 
 from zero_harness import sessions
 from zero_harness.commands import self_improve
-from zero_harness.tools import todo
+from zero_harness.tools import agent, todo
 from zero_harness.tools.runner import summary
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
@@ -26,6 +26,7 @@ async def run(history: list, args: str) -> None:
         choices = [questionary.Choice(sessions.label(path), value=path) for path in paths]
         path = await questionary.select("session:", choices=choices).ask_async()
     if path:
+        agent.cancel_all()  # their reports belong to the old session
         history[:] = sessions.load(path)
         replay(history)
         notes.console.export_text()  # Discard the replay; the loaded session has its own capture buffer.

@@ -7,7 +7,7 @@ from zero_harness import config, usage
 from zero_harness.models import registry
 from zero_harness.models.reply import Reply, Usage
 from zero_harness.tools import agent
-from zero_harness.tools import registry as tools
+from zero_harness.ui import user_input
 
 
 def reply(*output):
@@ -60,35 +60,55 @@ def test_subagent_tools_never_include_agent():
     assert {tool.SCHEMA["name"] for tool in agent.EDITING} == names | {"edit_file", "bash"}
 
 
-def test_runs_tools_until_it_answers_and_counts_its_cost(monkeypatch):
+def test_starts_in_the_background_and_reports_when_done(monkeypatch):
     config.saved["model"] = "anthropic/claude-haiku-5-5"
     config.saved["smart_model"] = "anthropic/claude-opus-5-5"
     replies = iter([reply(call("grep", "1", pattern="x")), reply(message("found it at a.py:3"))])
-    seen = []
+    seen, reports, go = [], [], asyncio.Event()
 
     async def fake_call(*, model, history, tools, **_):
+        await go.wait()
         seen.append((model, [schema["name"] for schema in tools], len(history)))
         return next(replies)
 
     monkeypatch.setattr(registry, "call", fake_call)
     monkeypatch.setattr(agent.grep, "run", lambda pattern: "a.py:3:x")
+    monkeypatch.setattr(agent, "on_finish", reports.append)
     monkeypatch.setattr(usage, "cost", 0.0)
-    answer = asyncio.run(agent.run("find x", model="smart"))
-    assert answer == "found it at a.py:3"
+
+    async def scenario():
+        started = await agent.run("find x", model="smart")
+        assert started.startswith("started agent") and not reports
+        await asyncio.sleep(0)
+        assert [state for state, _ in user_input.subagents.values()] == ["working"]
+        go.set()
+        await asyncio.gather(*agent.tasks.values())
+
+    asyncio.run(scenario())
     assert seen[0] == ("anthropic/claude-opus-5-5", ["read_file", "grep", "web_search", "web_fetch"], 1)
     assert seen[1][2] == 3  # task, grep call, grep output
+    assert len(reports) == 1 and "find x" in reports[0] and reports[0].endswith("found it at a.py:3")
+    assert not user_input.subagents and not agent.tasks
     assert usage.cost > 0
 
 
-def test_subagents_run_in_parallel_and_outputs_keep_call_order(monkeypatch):
-    both_running = asyncio.Barrier(2)
+def test_subagents_run_together_and_cancel_without_reporting(monkeypatch):
+    config.saved["model"] = "anthropic/claude-haiku-5-5"
+    both_running, reports = asyncio.Barrier(2), []
 
-    async def fake_agent(task, model="current"):
+    async def fake_call(**_):
         await asyncio.wait_for(both_running.wait(), timeout=1)  # times out unless the two run together
-        return task
+        await asyncio.sleep(10)
 
-    monkeypatch.setitem(tools.FUNCTIONS, "agent", fake_agent)
-    monkeypatch.setitem(tools.FUNCTIONS, "todo", lambda items: "ok")
-    calls = [call("agent", "a", task="one"), call("todo", "t", items=[]), call("agent", "b", task="two")]
-    outputs = asyncio.run(tools.run_all(calls))
-    assert [output["output"] for output in outputs] == ["one", "ok", "two"]
+    monkeypatch.setattr(registry, "call", fake_call)
+    monkeypatch.setattr(agent, "on_finish", reports.append)
+
+    async def scenario():
+        await agent.run("one")
+        await agent.run("two")
+        await asyncio.sleep(0.1)
+        assert agent.cancel_all() == 2
+        await asyncio.gather(*agent.tasks.values(), return_exceptions=True)
+
+    asyncio.run(scenario())
+    assert reports == [] and not agent.tasks

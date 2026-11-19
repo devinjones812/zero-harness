@@ -23,11 +23,14 @@ from zero_harness import (
 from zero_harness.commands import mode, model, reload, resume
 from zero_harness.commands import registry as commands
 from zero_harness.models import registry as models
+from zero_harness.tools import agent
 from zero_harness.tools import registry as tools
 from zero_harness.ui import logo, notes, user_input
 from zero_harness.ui.notes import note
 
-inbox: asyncio.Queue[str | None] = asyncio.Queue()
+# What starts or feeds a turn: a typed message, a subagent's report as a ready history item, or None when a
+# background job finishes.
+inbox: asyncio.Queue[str | dict | None] = asyncio.Queue()
 turn: asyncio.Task | None = None
 
 
@@ -78,14 +81,15 @@ async def run(args: argparse.Namespace) -> None:
     if args.resume is not None:
         await commands.run(f"/resume {args.resume}".strip(), history)
     jobs.on_finish = lambda: inbox.put_nowait(None)
+    agent.on_finish = lambda report: inbox.put_nowait({"role": "user", "content": report})
     user_input.setup(busy, commands.options())
     with patch_stdout(raw=True):
-        agent = asyncio.create_task(agent_loop(history))
+        loop = asyncio.create_task(agent_loop(history))
         if args.message:
             notes.user(args.message)
             inbox.put_nowait(args.message)
         await input_loop(history)
-        agent.cancel()
+        loop.cancel()
 
 
 def welcome() -> None:
@@ -122,9 +126,12 @@ async def input_loop(history: list) -> None:
         try:
             text = await user_input.read()
         except KeyboardInterrupt:
-            if not busy():
+            if busy():
+                turn.cancel()
+            elif count := agent.cancel_all():
+                note(f"[interrupted] Stopped {count} subagent(s). Ctrl+C again quits.")
+            else:
                 return
-            turn.cancel()
             continue
         except EOFError:
             return
@@ -151,12 +158,12 @@ async def agent_loop(history: list) -> None:
         if text is None and not jobs.any_finished():
             continue
         if text:
-            history.append(images.user_message(text))
+            history.append(arrival(text))
         checkpoints.start()
         turn = asyncio.create_task(run_turn(history))
         try:
             await turn
-            if text and not sessions.title:
+            if isinstance(text, str) and not sessions.title:
                 sessions.title = await llm.title(text)
         except asyncio.CancelledError:
             if asyncio.current_task().cancelling():
@@ -183,16 +190,22 @@ async def run_turn(history: list) -> None:
         if not calls:
             return
 
-        history += await tools.run_all(calls)
+        for call in calls:
+            history.append(await tools.run(call))
 
     note(f"[limit] stopped after {max_rounds} tool rounds. Send a message to continue.")
+
+
+def arrival(text: str | dict) -> dict:
+    """A typed message (with any images it names), or a subagent's report as is."""
+    return text if isinstance(text, dict) else images.user_message(text)
 
 
 def add_arrivals(history: list) -> None:
     """Add messages sent during the turn and finished-job notices before the next model call."""
     while not inbox.empty():
         if text := inbox.get_nowait():
-            history.append(images.user_message(text))
+            history.append(arrival(text))
     for short, notice in jobs.finished():
         note(short)
         history.append({"role": "user", "content": notice})

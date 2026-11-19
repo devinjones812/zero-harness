@@ -46,6 +46,7 @@ MENU_ROWS = 8
 CUT_NOTE = "(earlier output is hidden after a resize; /history shows all of it)"
 
 session: PromptSession | None = None
+subagents: dict[str, tuple[str, str]] = {}  # label: ("waiting" or "working", model and task), shown above the stats
 live = ""
 live_style = "none"
 question = ""
@@ -173,9 +174,22 @@ def setup(busy, commands: dict) -> None:
         rows = session.app.output.get_size().rows - 9
         return ANSI(notes.markdown(live, max_lines=rows, style=live_style))
 
+    def subagent_lines():
+        dots = "." * (int(time.monotonic() * 3) % 3 + 1)
+        width = session.app.output.get_size().columns - 1
+        lines = [f"{notes.INDENT}{label} {state}{dots:<3}  {detail}" for label, (state, detail) in subagents.items()]
+        return [("class:status", "\n".join(line if len(line) <= width else line[: width - 1] + "…" for line in lines))]
+
     def status_line():
         dots = "." * (int(time.monotonic() * 3) % 3 + 1)
-        working = f"{notes.INDENT}working{dots:<3}" if busy() and not question else ""
+        if question:
+            working = ""
+        elif busy():
+            working = f"{notes.INDENT}working{dots:<3}"
+        else:
+            working = (
+                f"{notes.INDENT}waiting for subagent{'s' if len(subagents) > 1 else ''}{dots:<3}" if subagents else ""
+            )
         stats = usage.status().strip()
         width = session.app.output.get_size().columns - 1
         room = width - len(working) - (2 if working else 0)
@@ -252,6 +266,10 @@ def setup(busy, commands: dict) -> None:
             # The menu floats over this space, so while it is open, ask for enough rows to show it whole.
             Window(height=lambda: Dimension(min=MENU_ROWS if session.default_buffer.complete_state else 0)),
             Window(height=1),
+            ConditionalContainer(
+                Window(FormattedTextControl(subagent_lines), dont_extend_height=True),
+                filter=Condition(lambda: bool(subagents)),
+            ),
             Window(FormattedTextControl(status_line), height=1),
             rule,
             session.app.layout.container,

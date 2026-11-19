@@ -7,6 +7,7 @@ from zero_harness import config, errors, permissions, prompt, usage, workdir, wo
 from zero_harness.commands import model as model_command
 from zero_harness.models import listing, registry
 from zero_harness.tools import bash, edit_file, grep, read_file, runner, web_fetch, web_search
+from zero_harness.ui import user_input
 from zero_harness.ui.notes import note
 
 # No agent tool for subagents: they can't start their own.
@@ -16,15 +17,16 @@ MAX_ROUNDS = 30
 running = asyncio.Semaphore(4)  # at most this many subagents at once
 choosing = asyncio.Lock()
 TIERS = {"smart": ("hard, narrow problems", listing.smartest), "fast": ("simple searches", listing.cheapest)}
-started = 0  # numbers editing subagents, for their labels
+started = 0  # numbers subagents, for their labels
+tasks: dict[str, asyncio.Task] = {}  # running subagents by label
 
 SCHEMA = {
     "type": "function",
     "name": "agent",
     "description": (
-        "Hand a task to a subagent. It returns only its final answer. It can't see this conversation, so give it "
-        "everything: the goal, relevant paths and facts, and what to return. Call agent several times in one reply "
-        "to run subagents in parallel. By default it is read-only (grep, read_file, web_search, web_fetch). With "
+        "Start a subagent in the background. Its final answer arrives later as a message; the conversation goes on "
+        "meanwhile. It can't see this conversation, so give it everything: the goal, relevant paths and facts, and "
+        "what to return. Start several to work in parallel. By default it is read-only (grep, read_file, web_search, web_fetch). With "
         "edit=true it also gets edit_file and bash in its own copy of the project, and its changes merge into the "
         "user's files when it finishes; give parallel editing subagents separate files to avoid conflicts."
     ),
@@ -47,27 +49,65 @@ SCHEMA = {
 }
 
 
+def on_finish(report: str) -> None:
+    """Called with a subagent's report when it finishes. main replaces it to queue the report like a message."""
+
+
 async def run(task: str, model: str = "current", edit: bool = False) -> str:
+    """Start a subagent in the background and return at once, so the conversation goes on while it works."""
+    top = await asyncio.to_thread(worktrees.repo, Path.cwd()) if edit else None
+    if edit and top is None:
+        return "error: editing subagents need a git repo. Use a read-only subagent, or make the edits yourself."
     chosen = await pick(model)
-    async with running:
-        if not edit:
-            return await work(chosen, task, prompt.subagent(workdir.root(), edit=False), READ_ONLY, "agent")
-        top = await asyncio.to_thread(worktrees.repo, Path.cwd())
-        if top is None:
-            return "error: editing subagents need a git repo. Use a read-only subagent, or make the edits yourself."
-        global started
-        started += 1
-        base = await asyncio.to_thread(worktrees.snapshot, top)
-        tree = await asyncio.to_thread(worktrees.create, top, base, f"agent {started}")
+    global started
+    started += 1
+    label = f"agent {started}"
+    tasks[label] = asyncio.create_task(background(label, chosen, task, top))
+    return (
+        f"started {label} on {chosen}. Its report arrives as a message starting with [{label}] when it finishes. "
+        "Meanwhile keep working on other things, or end your turn. Don't wait or check on it."
+    )
+
+
+async def background(label: str, model: str, task: str, top: Path | None) -> None:
+    """Run a subagent, show it as working below the conversation, and report when done. Cancelling reports nothing."""
+    detail = f"{model}  {' '.join(task.split())}"
+    user_input.subagents[label] = ("waiting", detail)
+    try:
+        async with running:
+            user_input.subagents[label] = ("working", detail)
+            report = await (edit_in_worktree(label, model, task, top) if top else read_only(label, model, task))
+    except Exception as error:  # noqa: BLE001 - a failed subagent reports its error instead of vanishing
+        report = f"error: {type(error).__name__}: {error}"
+    finally:
+        user_input.subagents.pop(label, None)
+        tasks.pop(label, None)
+    on_finish(f"[{label} finished] Its task: {task}\n\nIts report:\n{report}")
+
+
+async def read_only(label: str, model: str, task: str) -> str:
+    return await work(model, task, prompt.subagent(workdir.root(), edit=False), READ_ONLY, label)
+
+
+async def edit_in_worktree(label: str, model: str, task: str, top: Path) -> str:
+    base = await asyncio.to_thread(worktrees.snapshot, top)
+    tree = await asyncio.to_thread(worktrees.create, top, base, label)
+    try:
+        token = workdir.tree.set(tree)
         try:
-            token = workdir.tree.set(tree)
-            try:
-                answer = await work(chosen, task, prompt.subagent(tree.root, edit=True), EDITING, tree.label)
-            finally:
-                workdir.tree.reset(token)
-            return answer + await merge_back(tree, base)
+            answer = await work(model, task, prompt.subagent(tree.root, edit=True), EDITING, label)
         finally:
-            await asyncio.to_thread(worktrees.remove, tree)
+            workdir.tree.reset(token)
+        return answer + await merge_back(tree, base)
+    finally:
+        await asyncio.to_thread(worktrees.remove, tree)
+
+
+def cancel_all() -> int:
+    """Stop every running subagent. Returns how many there were."""
+    for task in tasks.values():
+        task.cancel()
+    return len(tasks)
 
 
 async def work(model: str, task: str, instructions: str, tools: list, label: str) -> str:
