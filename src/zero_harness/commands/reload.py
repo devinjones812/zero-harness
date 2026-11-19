@@ -1,7 +1,7 @@
 import questionary
 
 from zero_harness import jobs
-from zero_harness.tools import agent
+from zero_harness.tools import subagent
 
 DESCRIPTION = "restart, keep conversation"
 
@@ -13,7 +13,7 @@ async def run(history: list, args: str) -> None:
     global requested
     running = [
         f"{count} {kind}"
-        for count, kind in ((jobs.running(), "background job(s)"), (len(agent.tasks), "subagent(s)"))
+        for count, kind in ((jobs.running(), "background job(s)"), (len(subagent.tasks), "subagent(s)"))
         if count
     ]
     if running:

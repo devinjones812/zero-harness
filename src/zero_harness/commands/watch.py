@@ -5,7 +5,7 @@ import sys
 
 import questionary
 
-from zero_harness.tools import agent
+from zero_harness.tools import subagent
 from zero_harness.ui.notes import note
 
 DESCRIPTION = "follow a subagent live"
@@ -13,23 +13,23 @@ ANYTIME = True
 
 
 def complete(words: list[str]) -> list[str]:
-    return [] if words else [label.split()[-1] for label in agent.logs]
+    return [] if words else [label.split()[-1] for label in subagent.logs]
 
 
 async def run(history: list, args: str) -> None:
-    """/watch opens a window that follows a subagent's log. /watch 2 picks agent 2; with several, a menu asks."""
-    if not agent.logs:
+    """/watch opens a window that follows a subagent's log. /watch 2 picks subagent 2; with several, a menu asks."""
+    if not subagent.logs:
         note("no subagents yet")
         return
-    label = f"agent {args}" if args else None
+    label = f"subagent {args}" if args else None
     if label is None:
-        running = [label for label in agent.logs if label in agent.tasks]
-        choices = running or list(agent.logs)
+        running = [label for label in subagent.logs if label in subagent.tasks]
+        choices = running or list(subagent.logs)
         label = choices[0] if len(choices) == 1 else await questionary.select("subagent:", choices=choices).ask_async()
-    if label not in agent.logs:
-        note(f"no {label}. Subagents this session: {', '.join(agent.logs)}")
+    if label not in subagent.logs:
+        note(f"no {label}. Subagents this session: {', '.join(subagent.logs)}")
         return
-    log = agent.logs[label]
+    log = subagent.logs[label]
     follow = f"tail -n +1 -f {shlex.quote(str(log))}"
     if sys.platform == "darwin":
         # A .command file opens in the user's default terminal app as a new window.

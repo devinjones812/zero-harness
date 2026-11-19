@@ -32,7 +32,7 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 - **Skills.** Put a skill in `~/.zero/skills/<name>/SKILL.md` (or symlink one). For browser use, install [browser-harness](https://github.com/browser-use/browser-harness) and link its skill; zero then drives your real Chrome, so `auto-review` asks first.
 - **Live prices.** Models, prices, and context sizes come from [models.dev](https://models.dev), refreshed daily.
 
-**Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo` | `agent`
+**Tools:** `bash` | `job` | `read_file` | `edit_file` | `grep` | `web_search` | `web_fetch` | `todo` | `subagent`
 
 ## Subagents
 
@@ -40,7 +40,7 @@ zero can hand a task to a subagent: a separate model run that gets only a brief 
 
 - **Read-only by default.** Subagents search, read files, and use the web. They never need approval or conflict.
 - **Editing subagents.** For changes, zero can give a subagent its own copy of the project (a git worktree, with your uncommitted changes and your `.venv` or `node_modules` linked in). It edits and runs tests there. When it finishes, zero merges its changes into your files with one approval, under your approval mode. `/undo` reverts them. If a file changed in your copy too, overlapping edits go back to zero to resolve. Needs a git repo.
-- **In the background.** You keep talking to zero while subagents work. Each shows `agent N working...` above the status line; `/watch N` follows it live in a new window. Its report arrives like a message you sent. Up to 4 run at once. Ctrl+C with no turn running stops them.
+- **In the background.** You keep talking to zero while subagents work. Each shows `subagent N working...` above the status line; `/watch N` follows it live in a new window. Its report arrives like a message you sent. Up to 4 run at once. Ctrl+C with no turn running stops them.
 - **Any model.** Each subagent runs on one of:
   - your current model (the default)
   - `smart`: for hard, narrow problems, such as one failing test

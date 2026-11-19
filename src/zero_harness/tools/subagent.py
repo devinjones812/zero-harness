@@ -9,10 +9,10 @@ from zero_harness.commands import model as model_command
 from zero_harness.models import listing, registry
 from zero_harness.tools import bash, edit_file, grep, read_file, runner, web_fetch, web_search
 from zero_harness.ui import user_input
-from zero_harness.ui.agent_log import Log
 from zero_harness.ui.notes import note
+from zero_harness.ui.subagent_log import Log
 
-# No agent tool for subagents: they can't start their own.
+# No subagent tool for subagents: they can't start their own.
 READ_ONLY = [read_file, grep, web_search, web_fetch]
 EDITING = [*READ_ONLY, edit_file, bash]
 MAX_ROUNDS = 30
@@ -25,7 +25,7 @@ logs: dict[str, Path] = {}  # every subagent's live log this session, for /watch
 
 SCHEMA = {
     "type": "function",
-    "name": "agent",
+    "name": "subagent",
     "description": (
         "Start a subagent in the background. Its final answer arrives later as a message; the conversation goes on "
         "meanwhile. It can't see this conversation, so give it everything: the goal, relevant paths and facts, and "
@@ -64,7 +64,7 @@ async def run(task: str, model: str = "current", edit: bool = False) -> str:
     chosen = await pick(model)
     global started
     started += 1
-    label = f"agent {started}"
+    label = f"subagent {started}"
     tasks[label] = asyncio.create_task(background(label, chosen, task, top))
     return (
         f"started {label} on {chosen}. Its report arrives as a message starting with [{label}] when it finishes. "

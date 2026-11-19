@@ -23,8 +23,8 @@ from zero_harness import (
 from zero_harness.commands import mode, model, reload, resume
 from zero_harness.commands import registry as commands
 from zero_harness.models import registry as models
-from zero_harness.tools import agent
 from zero_harness.tools import registry as tools
+from zero_harness.tools import subagent
 from zero_harness.ui import logo, notes, user_input
 from zero_harness.ui.notes import note
 
@@ -81,7 +81,7 @@ async def run(args: argparse.Namespace) -> None:
     if args.resume is not None:
         await commands.run(f"/resume {args.resume}".strip(), history)
     jobs.on_finish = lambda: inbox.put_nowait(None)
-    agent.on_finish = lambda report: inbox.put_nowait({"role": "user", "content": report})
+    subagent.on_finish = lambda report: inbox.put_nowait({"role": "user", "content": report})
     user_input.setup(busy, commands.options())
     with patch_stdout(raw=True):
         loop = asyncio.create_task(agent_loop(history))
@@ -128,7 +128,7 @@ async def input_loop(history: list) -> None:
         except KeyboardInterrupt:
             if busy():
                 turn.cancel()
-            elif count := agent.cancel_all():
+            elif count := subagent.cancel_all():
                 note(f"[interrupted] Stopped {count} subagent(s). Ctrl+C again quits.")
             else:
                 return

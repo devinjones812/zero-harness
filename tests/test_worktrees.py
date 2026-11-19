@@ -34,7 +34,7 @@ def repo(tmp_path, monkeypatch):
 @pytest.fixture
 def tree(repo):
     base = worktrees.snapshot(repo)
-    made = worktrees.create(repo, base, "agent 1")
+    made = worktrees.create(repo, base, "subagent 1")
     yield made, base
     worktrees.remove(made)
 

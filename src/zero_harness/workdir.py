@@ -8,7 +8,7 @@ from pathlib import Path
 
 @dataclass
 class Tree:
-    label: str  # shown in approval prompts, e.g. "agent 2"
+    label: str  # shown in approval prompts, e.g. "subagent 2"
     repo: Path  # top of the user's git repo
     top: Path  # top of the worktree, a copy of `repo`
     root: Path  # the folder in `top` that stands in for the working directory
