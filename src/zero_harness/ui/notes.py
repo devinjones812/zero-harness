@@ -1,10 +1,46 @@
 import io
+from collections import deque
 
-from rich.console import Console
+import rich.console
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
+
+MAX_REPRINTS = 2000
+
+
+class Console(rich.console.Console):
+    """Keeps the last MAX_REPRINTS print calls, so a resize can print them again at the new width."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.printed = deque(maxlen=MAX_REPRINTS)
+        self.keep = True
+
+    def print(self, *objects, **kwargs) -> None:
+        if self.keep:
+            self.printed.append((objects, kwargs))
+        super().print(*objects, **kwargs)
+
+    def reprint(self) -> None:
+        self.keep = False
+        try:
+            for objects, kwargs in list(self.printed):
+                super().print(*objects, **kwargs)
+        finally:
+            self.keep = True
+
+
+class Wrapped:
+    """Markdown rendered when printed, so a reprint wraps it to the terminal's current width."""
+
+    def __init__(self, text: str, style: str = "none"):
+        self.text, self.style = text, style
+
+    def __rich_console__(self, console, options):
+        yield Text.from_ansi(markdown(self.text, style=self.style))
+
 
 console = Console(record=True)  # /self-improve exports what the user saw
 ACCENT = "#c8b4ff"
@@ -60,14 +96,14 @@ def section() -> None:
 
 def answer(text: str) -> None:
     """Print markdown to scrollback."""
-    console.print(Text.from_ansi(markdown(text)), soft_wrap=True)
+    console.print(Wrapped(text), soft_wrap=True)
 
 
 def thought(text: str) -> None:
     """Print a reasoning summary to scrollback, dim and set apart by a blank line."""
     global after_tools
     console.print()
-    console.print(Text.from_ansi(markdown(text, style=THOUGHT_STYLE)), soft_wrap=True)
+    console.print(Wrapped(text, THOUGHT_STYLE), soft_wrap=True)
     after_tools = True
 
 

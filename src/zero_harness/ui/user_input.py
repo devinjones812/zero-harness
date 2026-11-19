@@ -163,8 +163,8 @@ def setup(busy, commands: dict, reprint) -> None:
     land where they streamed), empty space, one blank row that stays when the screen is full,
     working… and the stats, a rule, the input, a rule.
 
-    `commands` maps each /command name to complete(words), for Tab completion. reprint() prints the conversation
-    again; a resize calls it.
+    `commands` maps each /command name to complete(words), for Tab completion. reprint() prints everything shown
+    so far again; a resize calls it.
     """
     global session
 
