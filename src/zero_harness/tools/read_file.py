@@ -1,6 +1,4 @@
-from pathlib import Path
-
-from zero_harness import images
+from zero_harness import images, workdir
 
 DEFAULT_LIMIT = 2000
 
@@ -25,9 +23,10 @@ SCHEMA = {
 
 
 def run(path: str, offset: int = 1, limit: int = DEFAULT_LIMIT) -> str | list:
+    file = workdir.resolve(path)
     if images.is_image(path):
-        return [images.content(path)]
-    lines = Path(path).read_text().splitlines()
+        return [images.content(str(file))]
+    lines = file.read_text().splitlines()
     start = max(offset, 1)
     end = start + limit - 1
     output = "\n".join(f"{number:6}|{line}" for number, line in enumerate(lines[start - 1 : end], start))

@@ -1,6 +1,4 @@
-from pathlib import Path
-
-from zero_harness import checkpoints
+from zero_harness import checkpoints, workdir
 from zero_harness.permissions import approve_edit
 from zero_harness.ui.notes import diff
 
@@ -24,7 +22,7 @@ SCHEMA = {
 
 
 async def run(path: str, old_text: str, new_text: str) -> str:
-    file = Path(path)
+    file = workdir.resolve(path)
     if old_text == "":
         if file.exists():
             return "error: file exists. Give old_text to edit it."
@@ -36,10 +34,13 @@ async def run(path: str, old_text: str, new_text: str) -> str:
             return f"error: old_text found {count} times, must be exactly 1"
         content = content.replace(old_text, new_text)
 
-    diff(old_text, new_text)
-    if denied := await approve_edit(path):
+    in_worktree = workdir.tree.get() is not None
+    if not in_worktree:  # a subagent's edits show as one change set when they merge back
+        diff(old_text, new_text)
+    if denied := await approve_edit(str(file)):
         return denied
-    checkpoints.record(path)
+    if not in_worktree:  # /undo covers the user's files; worktrees are thrown away
+        checkpoints.record(str(file))
     file.parent.mkdir(parents=True, exist_ok=True)
     file.write_text(content)
     return "ok"

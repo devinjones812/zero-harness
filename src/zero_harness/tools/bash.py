@@ -1,7 +1,7 @@
 import asyncio
 import subprocess
 
-from zero_harness import jobs
+from zero_harness import jobs, workdir
 from zero_harness.permissions import approve_command
 from zero_harness.ui.notes import note
 
@@ -12,7 +12,7 @@ SCHEMA = {
     "type": "function",
     "name": "bash",
     "description": (
-        "Run a bash command in the current directory. Returns stdout and stderr. No stdin. "
+        "Run a bash command in the working directory. Returns stdout and stderr. No stdin. "
         f"Default timeout {DEFAULT_TIMEOUT}s, max {MAX_TIMEOUT}s. Raise it for slow builds or tests. "
         "Use background=true for servers, watchers, or anything longer; it returns a job id at once."
     ),
@@ -34,6 +34,8 @@ SCHEMA = {
 
 async def run(command: str, purpose: str = "", timeout: int = DEFAULT_TIMEOUT, background: bool = False) -> str:
     """Run in its own process group so a timeout or Ctrl+C kills the command and every child it started."""
+    if background and workdir.tree.get():
+        return "error: subagents can't start background jobs. Run the command with a timeout instead."
     if background:
         note("  ↳ runs in the background")
     if denied := await approve_command(command, purpose):
@@ -47,6 +49,7 @@ async def run(command: str, purpose: str = "", timeout: int = DEFAULT_TIMEOUT, b
         stdin=subprocess.DEVNULL,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        cwd=workdir.root(),
         start_new_session=True,
     )
     chunks = []

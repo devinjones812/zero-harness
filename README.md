@@ -38,7 +38,8 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 
 zero can hand a task to a subagent: a separate model run that gets only a brief and returns only its answer. This keeps zero's own context small and lets work run in parallel. Ask for subagents, or zero uses them when a task fits.
 
-- **Read-only.** Subagents can search, read files, and use the web. Only zero itself edits files and runs commands, so subagents never need approval or conflict.
+- **Read-only by default.** Subagents search, read files, and use the web. They never need approval or conflict.
+- **Editing subagents.** For changes, zero can give a subagent its own copy of the project (a git worktree, with your uncommitted changes and your `.venv` or `node_modules` linked in). It edits and runs tests there. When it finishes, zero merges its changes into your files with one approval, under your approval mode. `/undo` reverts them. If a file changed in your copy too, overlapping edits go back to zero to resolve. Needs a git repo.
 - **Parallel.** Up to 4 at once, each with its own one-line status.
 - **Any model.** Each subagent runs on one of:
   - your current model (the default)

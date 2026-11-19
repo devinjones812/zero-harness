@@ -54,8 +54,10 @@ def test_exact_model_from_another_provider(monkeypatch):
         asyncio.run(agent.pick("anthropic/claude-opus-5-5"))
 
 
-def test_subagents_are_read_only_and_cannot_start_subagents():
-    assert set(agent.FUNCTIONS) == {"read_file", "grep", "web_search", "web_fetch"}
+def test_subagent_tools_never_include_agent():
+    names = {tool.SCHEMA["name"] for tool in agent.READ_ONLY}
+    assert names == {"read_file", "grep", "web_search", "web_fetch"}
+    assert {tool.SCHEMA["name"] for tool in agent.EDITING} == names | {"edit_file", "bash"}
 
 
 def test_runs_tools_until_it_answers_and_counts_its_cost(monkeypatch):
@@ -69,7 +71,7 @@ def test_runs_tools_until_it_answers_and_counts_its_cost(monkeypatch):
         return next(replies)
 
     monkeypatch.setattr(registry, "call", fake_call)
-    monkeypatch.setitem(agent.FUNCTIONS, "grep", lambda pattern: "a.py:3:x")
+    monkeypatch.setattr(agent.grep, "run", lambda pattern: "a.py:3:x")
     monkeypatch.setattr(usage, "cost", 0.0)
     answer = asyncio.run(agent.run("find x", model="smart"))
     assert answer == "found it at a.py:3"

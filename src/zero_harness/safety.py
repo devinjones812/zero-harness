@@ -1,4 +1,3 @@
-import os
 import re
 from pathlib import Path
 
@@ -78,7 +77,7 @@ def _openai_clear(state: str) -> float | None:
     return None
 
 
-def review(command: str, scratch: Path) -> tuple[bool, str]:
+def review(command: str, scratch: Path, cwd: Path) -> tuple[bool, str]:
     """Review an auto-mode command. Local high-risk matches and reviewer failures require confirmation."""
     if ALWAYS_ASK.search(command):
         return False, "matches a high-risk pattern"
@@ -86,7 +85,7 @@ def review(command: str, scratch: Path) -> tuple[bool, str]:
     if provider is None:
         return False, "no reviewer: auto-review needs OPENAI_API_KEY or TYPESAFE_API_KEY"
     label, assess = ("Jev", _jev_clear) if provider == "jev" else ("OpenAI Decisions", _openai_clear)
-    state = f"Working directory: {os.getcwd()}\nScratch folder: {scratch}\nCommand: {command}"
+    state = f"Working directory: {cwd}\nScratch folder: {scratch}\nCommand: {command}"
     try:
         clear = assess(state)
     except Exception as error:  # noqa: BLE001 - any reviewer failure falls back to asking the user
