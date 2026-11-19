@@ -178,9 +178,9 @@ def setup(busy, commands: dict) -> None:
         working = f"{notes.INDENT}working{dots:<3}" if busy() and not question else ""
         stats = usage.status().strip()
         width = session.app.output.get_size().columns - 1
-        # The stats stay put: without room for both, drop "working" rather than shift the stats.
-        if len(working) + 2 + len(stats) > width:
-            working = ""
+        room = width - len(working) - (2 if working else 0)
+        if len(stats) > room:
+            stats = stats[: max(room - 1, 0)] + "…"
         return [("class:status", f"{working}{stats:>{width - len(working)}}"[:width])]
 
     timer, built_for = None, None
