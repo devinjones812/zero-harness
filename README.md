@@ -39,15 +39,15 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 | --- | --- |
 | `/model [provider] [model]` | Pick a provider, model, and reasoning level. Tab completes; arrow keys pick. |
 | `/reasoning [level]` | Set reasoning. Levels depend on the model. |
-| `/mode [mode]` | Set approvals: `ask`, `auto-review`, `auto-max`. |
-| `/new` | Start a new session. |
-| `/resume` | Continue a saved session. |
-| `/undo` | Undo the last turn's file edits. Repeat to go further back. |
-| `/history` | Show everything printed this session in a pager. `q` returns. |
 | `/summarize` | Replace the conversation with a summary to free up context. |
-| `/title <title>` | Rename the session. |
+| `/mode [mode]` | Set approvals: `ask`, `auto-review`, `auto-max`. |
+| `/resume` | Continue a saved session. |
 | `/self-improve <note>` | Have a new zero find and fix what went wrong here. |
 | `/reload` | Restart zero to apply code changes, keeping the conversation. |
+| `/new` | Start a new session. |
+| `/undo` | Undo the last turn's file edits. Repeat to go further back. |
+| `/title <title>` | Rename the session. |
+| `/history` | Show everything printed this session in a pager. `q` returns. |
 
 Ctrl+E opens the input in `$EDITOR`. End a line with `\` for a newline.
 

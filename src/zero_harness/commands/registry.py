@@ -17,17 +17,17 @@ from zero_harness.ui import notes
 from zero_harness.ui.notes import note
 
 COMMANDS = {
-    "new": new,
-    "resume": resume,
     "model": model,
     "reasoning": reasoning,
-    "mode": mode,
-    "undo": undo,
-    "history": history,
     "summarize": summarize,
-    "title": title,
+    "mode": mode,
+    "resume": resume,
     "self-improve": self_improve,
     "reload": reload,
+    "new": new,
+    "undo": undo,
+    "title": title,
+    "history": history,
 }
 
 
