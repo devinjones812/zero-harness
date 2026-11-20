@@ -1,6 +1,6 @@
 # zero-harness
 
-A minimal terminal agent harness designed for efficiency and reliability. Under 3,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? **ZERO**. **It can also fix itself.**
+A minimal terminal agent harness designed for efficiency and reliability. Under 3,000 lines of Python, 8 tools, and a ~700-word system prompt. Unnecessary features? `ZERO`. **It can also fix itself.**
 
 ![zero fixing a failing test](assets/demo.gif)
 
