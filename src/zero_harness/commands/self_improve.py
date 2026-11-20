@@ -32,13 +32,15 @@ web, e.g. for how other harnesses handle the same problem.
 Steps:
 1. Propose fixes. For each issue: what went wrong, the cause, and the fix. Wait for the user's approval or comments.
 2. Make the approved fixes. Check that zero imports.
-3. Tell the user to type /reload in the other session to apply them.
+3. Tell the user to type /reload in the other session to apply them, then test them there.
+4. When the user says the fixes work, commit them with a message that describes the fixes.
 
 {earlier}Rules:
 - Prefer code fixes. Change the prompt only when needed, and keep it short.
 - Keep the code clean: the smallest change that fixes the cause. No new layers or abstractions.
+- When you add state, check every place that resets or cancels related state.
 - Ask the user only when absolutely needed.
-- Don't commit. Commit {checkpoint} holds the code from before your changes. To roll back:
+- Commit only in step 4. Commit {checkpoint} holds the code from before your changes. To roll back:
   git reset --hard {checkpoint}
 """
 
@@ -85,13 +87,16 @@ def marker(checkpoint: str) -> None:
 
 
 def commit() -> str | None:
-    """Commit zero's repo as it is now. Return the commit hash, or None if the commit failed."""
+    """Commit zero's repo as it is now, naming the changed files. Return the commit hash, or None if the commit failed."""
 
     def git(*args: str) -> subprocess.CompletedProcess:
         return subprocess.run(["git", "-C", str(REPO), *args], check=False, capture_output=True, text=True)
 
     git("add", "-A")
-    git("commit", "-m", "checkpoint before self-improve")
+    if changed := git("diff", "--cached", "--name-only").stdout.split():
+        more = f" and {len(changed) - 5} more" if len(changed) > 5 else ""
+        git("commit", "-m", f"Before self-improve: {', '.join(changed[:5])}{more}")
+        note(f"committed {len(changed)} uncommitted file(s) as the checkpoint")
     if left := git("status", "--porcelain").stdout.strip():
         note(f"could not commit zero's repo, so there is no checkpoint to roll back to:\n{left}", style="red")
         return None
