@@ -93,7 +93,8 @@ def plan(tree: Tree, base: str) -> tuple[dict[str, bytes | None], list[str]]:
 
 
 def apply(top: Path, writes: dict[str, bytes | None]) -> None:
-    """Write a plan to the user's files. /undo can restore them."""
+    """Write a plan to the user's files. /undo restores them as one step."""
+    checkpoints.start()
     for path, content in writes.items():
         file = top / path
         checkpoints.record(str(file))

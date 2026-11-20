@@ -84,6 +84,11 @@ def user(text: str) -> None:
     console.print()
 
 
+def summary(args: dict) -> str:
+    """A tool call's first argument on one line, e.g. the command or path. Enough to see what the tool is doing."""
+    return str(next((value for key, value in args.items() if key != "purpose"), "")).replace("\n", " ")
+
+
 def tool(name: str, detail: str) -> None:
     """One line per tool call, cut to the terminal width."""
     global after_tools

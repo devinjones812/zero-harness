@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 import traceback
+from dataclasses import dataclass
 from pathlib import Path
 
 from prompt_toolkit.patch_stdout import patch_stdout
@@ -25,12 +26,24 @@ from zero_harness.commands import registry as commands
 from zero_harness.models import registry as models
 from zero_harness.tools import registry as tools
 from zero_harness.tools import subagent
-from zero_harness.ui import logo, notes, user_input
+from zero_harness.ui import logo, notes, pickers, user_input
 from zero_harness.ui.notes import note
 
-# What starts or feeds a turn: a typed message, a subagent's report as a ready history item, or None when a
-# background job finishes.
-inbox: asyncio.Queue[str | dict | None] = asyncio.Queue()
+
+@dataclass
+class Arrival:
+    """What starts or feeds a turn. `item` is the history item to add: a typed message, with any images it names, or
+    a subagent's report. None means only that a background job finished. `typed` is the user's text, for the title."""
+
+    item: dict | None = None
+    typed: str = ""
+
+
+def typed(text: str) -> Arrival:
+    return Arrival(images.user_message(text), text)
+
+
+inbox: asyncio.Queue[Arrival] = asyncio.Queue()
 turn: asyncio.Task | None = None
 
 
@@ -80,14 +93,14 @@ async def run(args: argparse.Namespace) -> None:
             note(f"[mode] {mode.NO_REVIEWER}", style="yellow")
     if args.resume is not None:
         await commands.run(f"/resume {args.resume}".strip(), history)
-    jobs.on_finish = lambda: inbox.put_nowait(None)
-    subagent.on_finish = lambda report: inbox.put_nowait({"role": "user", "content": report})
+    jobs.on_finish = lambda: inbox.put_nowait(Arrival())
+    subagent.on_finish = lambda report: inbox.put_nowait(Arrival({"role": "user", "content": report}))
     user_input.setup(busy, commands.options())
     with patch_stdout(raw=True):
         loop = asyncio.create_task(agent_loop(history))
         if args.message:
             notes.user(args.message)
-            inbox.put_nowait(args.message)
+            inbox.put_nowait(typed(args.message))
         await input_loop(history)
         loop.cancel()
 
@@ -100,19 +113,16 @@ def welcome() -> None:
 
 async def ready() -> bool:
     """Have the user pick a model on first run or if its provider is gone. Ask for a missing key."""
-    name = model.current()[0]
+    name = pickers.current()[0]
     if name is None:
         if config.get("model"):
             note(f"{config.get('model')} names a provider that is no longer configured.")
         note("Pick a model to start. Change it anytime with /model.")
         await model.run([], "")
-        return model.current()[0] is not None
+        return pickers.current()[0] is not None
     if not models.has_key(name) and not await model.ask_key(name):
         return False
-    try:
-        await models.load_account(name)  # so Tab in /model offers only usable models
-    except errors.recoverable():
-        pass
+    await models.ensure_account(name)  # so Tab in /model offers only usable models
     return True
 
 
@@ -138,6 +148,7 @@ async def input_loop(history: list) -> None:
         if user_input.answer(text):
             continue
         if user_input.is_command(text):
+            notes.user(text.partition(" ")[0])  # name only: arguments may be private
             if busy() and not commands.anytime(text):
                 note(f"{text}: the agent is working. Wait for it to finish, or press Ctrl+C to stop it.")
             else:
@@ -147,24 +158,24 @@ async def input_loop(history: list) -> None:
                     return
             continue
         notes.user(text)
-        inbox.put_nowait(text)
+        inbox.put_nowait(typed(text))
 
 
 async def agent_loop(history: list) -> None:
     """Wait for a message or a finished background job, then run a turn. Ctrl+C cancels only the turn."""
     global turn
     while True:
-        text = await inbox.get()
-        if text is None and not jobs.any_finished():
+        arrival = await inbox.get()
+        if arrival.item is None and not jobs.any_finished():
             continue
-        if text:
-            history.append(arrival(text))
+        if arrival.item:
+            history.append(arrival.item)
         checkpoints.start()
         turn = asyncio.create_task(run_turn(history))
         try:
             await turn
-            if isinstance(text, str) and not sessions.title:
-                sessions.title = await llm.title(text)
+            if arrival.typed and not sessions.title:
+                sessions.title = await llm.title(arrival.typed)
         except asyncio.CancelledError:
             if asyncio.current_task().cancelling():
                 raise
@@ -182,8 +193,8 @@ async def run_turn(history: list) -> None:
     max_rounds = config.get("max_tool_rounds")
     for _ in range(max_rounds):
         add_arrivals(history)
-        await context.manage(history)
-        reply = await llm.respond(history)
+        await context.manage(history, tools.SCHEMAS)
+        reply = await llm.respond(history, tools.SCHEMAS)
         history += reply.output
 
         calls = [item for item in reply.output if item["type"] == "function_call"]
@@ -196,16 +207,11 @@ async def run_turn(history: list) -> None:
     note(f"[limit] stopped after {max_rounds} tool rounds. Send a message to continue.")
 
 
-def arrival(text: str | dict) -> dict:
-    """A typed message (with any images it names), or a subagent's report as is."""
-    return text if isinstance(text, dict) else images.user_message(text)
-
-
 def add_arrivals(history: list) -> None:
     """Add messages sent during the turn and finished-job notices before the next model call."""
     while not inbox.empty():
-        if text := inbox.get_nowait():
-            history.append(arrival(text))
+        if item := inbox.get_nowait().item:
+            history.append(item)
     for short, notice in jobs.finished():
         note(short)
         history.append({"role": "user", "content": notice})

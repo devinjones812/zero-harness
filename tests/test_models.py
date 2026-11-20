@@ -1,6 +1,8 @@
+import asyncio
+
 import pytest
 
-from zero_harness import config
+from zero_harness import catalog, config, errors
 from zero_harness.models import listing, registry
 
 
@@ -35,6 +37,63 @@ def test_lists_only_models_the_key_can_use():
     registry.account["anthropic"] = {"claude-opus-5-5", "claude-opus-5"}
     assert listing.latest("anthropic") == ["claude-opus-5-5"]
     assert listing.every("anthropic") == ["claude-opus-5-5", "claude-opus-5"]
+
+
+def test_smartest_skips_unversioned_aliases(monkeypatch):
+    daybreak = {"family": "claude", "released": "2026-11-01", "agentic": True, "cost": {"input": 12, "output": 75}}
+    monkeypatch.setitem(catalog.providers["anthropic"], "claude-daybreak-latest", daybreak)
+    assert listing.smartest("anthropic") == "claude-opus-5-5"
+
+
+def test_newest_of_a_family():
+    assert listing.newest("anthropic", "claude-opus") == "claude-opus-5-5"
+    assert listing.newest("anthropic", "claude-old") is None  # stale
+    assert listing.newest("anthropic", "claude-sonnet") is None
+
+
+class RateLimitError(Exception):
+    """Stands in for both SDKs' RateLimitError, which zero matches by name."""
+
+
+def fake_api(monkeypatch, failures):
+    """Point registry at an API that raises each of `failures`, then answers. Returns the call count."""
+    calls = []
+
+    async def call(*_, **__):
+        calls.append(1)
+        if len(calls) <= len(failures):
+            raise failures[len(calls) - 1]
+        return "reply"
+
+    monkeypatch.setattr(registry, "api", lambda name: type("API", (), {"call": staticmethod(call)}))
+    monkeypatch.setattr(registry, "client", lambda name: None)
+    sleep = asyncio.sleep
+    monkeypatch.setattr(registry.asyncio, "sleep", lambda seconds: sleep(0))
+    return calls
+
+
+def test_waits_for_a_free_request_slot(monkeypatch):
+    busy = RateLimitError("Number of concurrent connections has exceeded your rate limit.")
+    calls = fake_api(monkeypatch, [busy, busy])
+    assert asyncio.run(registry.call(instructions="", history=[], model="anthropic/claude-opus-5-5")) == "reply"
+    assert len(calls) == 3
+
+
+def test_gives_up_with_a_clear_message(monkeypatch):
+    busy = RateLimitError("Number of concurrent connections has exceeded your rate limit.")
+    fake_api(monkeypatch, [busy] * 100)
+    monkeypatch.setattr(registry, "SLOT_WAIT", 0)
+    with pytest.raises(errors.RateLimited, match="only a few requests at once"):
+        asyncio.run(registry.call(instructions="", history=[], model="anthropic/claude-opus-5-5"))
+    fake_api(monkeypatch, [RateLimitError("tokens per minute exceeded")])
+    with pytest.raises(errors.RateLimited, match="per minute"):
+        asyncio.run(registry.call(instructions="", history=[], model="anthropic/claude-opus-5-5"))
+
+
+def test_level_sends_only_what_the_model_offers():
+    assert listing.level("anthropic/claude-opus-5-5", "high") == "high"
+    assert listing.level("anthropic/claude-opus-5-5", "xhigh") is None  # not offered: the provider's default
+    assert listing.level("anthropic/claude-haiku-5-5", "low") is None  # doesn't reason
 
 
 def test_cheapest_and_efforts():

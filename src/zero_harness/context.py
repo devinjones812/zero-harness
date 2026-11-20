@@ -23,13 +23,14 @@ Include:
 Plain text only. Do not call tools."""
 
 
-async def manage(history: list) -> None:
-    """Trim or compact history based on the last call's input tokens. Call only when every tool call has its output."""
+async def manage(history: list, tools: list) -> None:
+    """Trim or compact history based on the last call's input tokens. Call only when every tool call has its output.
+    `tools` are the schemas the conversation sends, for compact()."""
     input_tokens = usage.input_tokens
     if input_tokens is None:
         return
     if input_tokens > COMPACT_AT_TOKENS:
-        await compact(history, f"last call used {input_tokens:,} input tokens (limit {COMPACT_AT_TOKENS:,})")
+        await compact(history, f"last call used {input_tokens:,} input tokens (limit {COMPACT_AT_TOKENS:,})", tools)
     elif input_tokens > TRIM_AT_TOKENS:
         trim(history, f"last call used {input_tokens:,} input tokens (limit {TRIM_AT_TOKENS:,})")
 
@@ -59,10 +60,10 @@ def trim(history: list, why: str) -> None:
         )
 
 
-async def compact(history: list, why: str) -> None:
+async def compact(history: list, why: str, tools: list) -> None:
     """In place: replace history with one message, a model-written summary of it."""
     notes.note("[context] summarizing...")
-    summary = await llm.complete(history + [{"role": "user", "content": SUMMARY_REQUEST}])
+    summary = await llm.complete(history + [{"role": "user", "content": SUMMARY_REQUEST}], tools)
     notes.note(f"[context] compact: {why}. Replaced {len(history)} history items with a {len(summary):,}-char summary.")
     history[:] = [
         {"role": "user", "content": f"Summary of the conversation so far:\n\n{summary}\n\nContinue from here."}

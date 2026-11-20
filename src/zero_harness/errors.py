@@ -7,17 +7,21 @@ class StreamError(Exception):
     """The response stream ended without a completed response."""
 
 
+class RateLimited(Exception):
+    """The provider still refused after the SDK's retries and zero's wait. The message says which limit."""
+
+
 def recoverable() -> tuple[type[Exception], ...]:
     """API errors a turn survives. SDKs load on first use, so only loaded ones can have raised."""
     sdks = [sys.modules[name] for name in ("openai", "anthropic") if name in sys.modules]
-    return (*(sdk.APIError for sdk in sdks), StreamError)
+    return (*(sdk.APIError for sdk in sdks), StreamError, RateLimited)
 
 
 INTERRUPTED = "interrupted: this tool did not run or did not finish."
 
 
 def report(error: Exception) -> None:
-    note(f"error: {type(error).__name__}: {error}", style="red")
+    note(str(error) if isinstance(error, RateLimited) else f"error: {type(error).__name__}: {error}", style="red")
     note("Conversation kept. Send a message to retry.")
 
 

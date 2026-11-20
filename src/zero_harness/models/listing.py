@@ -65,6 +65,11 @@ def efforts(model: str) -> list[str]:
     return EFFORTS if levels is None else levels
 
 
+def level(model: str, wanted: str | None) -> str | None:
+    """`wanted` if the model offers it. Otherwise None: the provider's default. APIs reject levels a model lacks."""
+    return wanted if wanted in efforts(model) else None
+
+
 def cheapest(name: str) -> str | None:
     """The provider's cheapest current model, for side jobs like web search. None if prices are unknown."""
     entries = known(name)
@@ -73,7 +78,16 @@ def cheapest(name: str) -> str | None:
 
 
 def smartest(name: str) -> str | None:
-    """The provider's most capable current model, taken to be its most expensive. None if prices are unknown."""
+    """The provider's most capable current model, taken to be its most expensive. None if prices are unknown.
+
+    Skips IDs with no version number, such as gpt-daybreak-red-latest: special-access aliases, not flagships.
+    """
     entries = known(name)
-    priced = [model_id for model_id in latest(name) if entries[model_id]["cost"]]
+    priced = [model_id for model_id in latest(name) if entries[model_id]["cost"] and any(c.isdigit() for c in model_id)]
     return max(priced, key=lambda model_id: entries[model_id]["cost"]["output"], default=None)
+
+
+def newest(name: str, family: str) -> str | None:
+    """The provider's newest current model in `family`, e.g. gpt-sol. None if the family is gone or stale."""
+    entries = known(name)
+    return next((model_id for model_id in latest(name) if entries[model_id]["family"] == family), None)

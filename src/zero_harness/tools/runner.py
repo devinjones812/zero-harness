@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import json
 
-from zero_harness.ui.notes import note, tool
+from zero_harness.ui.notes import note, summary, tool
 
 MAX_RESULT_CHARS = 20_000
 
@@ -29,11 +29,6 @@ async def run(call: dict, functions: dict, show: bool = True) -> dict:
     if isinstance(output, str):
         output = cap(output, show)
     return {"type": "function_call_output", "call_id": call["call_id"], "output": output}
-
-
-def summary(args: dict) -> str:
-    """The first argument on one line, e.g. the command or path. Enough to see what the tool is doing."""
-    return str(next((value for key, value in args.items() if key != "purpose"), "")).replace("\n", " ")
 
 
 def cap(output: str, show: bool = True) -> str:

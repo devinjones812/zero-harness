@@ -18,7 +18,7 @@ def test_tab_completion():
     def complete(text):
         return [item.text for item in completer.get_completions(Document(text), None)]
 
-    assert complete("/model ") == ["openai", "anthropic"]
+    assert complete("/model ") == ["openai", "anthropic", "smart", "fast"]
     assert complete("/model anthropic ") == ["claude-haiku-5-5", "claude-opus-5-5"]
     assert complete("/model anthropic claude-opus-5-5 ") == []
     assert complete("/mode ") == mode.MODES

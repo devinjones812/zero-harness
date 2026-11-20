@@ -7,7 +7,6 @@ import questionary
 from zero_harness import sessions
 from zero_harness.commands import self_improve
 from zero_harness.tools import subagent, todo
-from zero_harness.tools.runner import summary
 from zero_harness.ui import notes
 from zero_harness.ui.notes import note
 
@@ -55,7 +54,7 @@ def replay(history: list) -> None:
             if item["name"] == "todo":
                 todo.run(args["items"])
             else:
-                notes.tool(item["name"], summary(args))
+                notes.tool(item["name"], notes.summary(args))
         elif item.get("type") == "message" and item.get("role") == "assistant":
             text = "".join(part.get("text", "") for part in item["content"])
             if text.strip():

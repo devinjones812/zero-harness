@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from zero_harness.tools.runner import summary
+from zero_harness.ui.notes import summary
 
 THOUGHT, TOOL, BOLD, DIM, RESET = "\x1b[2;3m", "\x1b[36m", "\x1b[1m", "\x1b[2m", "\x1b[0m"
 MAX_OUTPUT_LINES = 20

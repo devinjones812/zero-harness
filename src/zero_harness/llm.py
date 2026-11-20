@@ -2,16 +2,13 @@ from zero_harness import config, usage
 from zero_harness.models import listing, registry
 from zero_harness.models.reply import Reply
 from zero_harness.prompt import INSTRUCTIONS
-from zero_harness.tools import registry as tools
 from zero_harness.ui.stream import Live
 
 
-async def respond(history: list) -> Reply:
-    """Stream one model turn to the terminal and return the reply."""
+async def respond(history: list, tools: list) -> Reply:
+    """Stream one model turn to the terminal and return the reply. `tools` are the main agent's tool schemas."""
     with Live() as live:
-        reply = await registry.call(
-            instructions=INSTRUCTIONS, history=history, tools=tools.SCHEMAS, effort=effort(), live=live
-        )
+        reply = await registry.call(instructions=INSTRUCTIONS, history=history, tools=tools, effort=effort(), live=live)
     usage.record(reply)
     return reply
 
@@ -26,15 +23,16 @@ async def title(text: str) -> str:
     return reply.text.strip().strip('"')
 
 
-async def complete(history: list) -> str:
-    """Hidden text-only call for internal use, e.g. compaction summaries."""
+async def complete(history: list, tools: list) -> str:
+    """Hidden text-only call for internal use, e.g. compaction summaries. Send the same `tools` as respond() so the
+    prompt cache still matches."""
     reply = await registry.call(
-        instructions=INSTRUCTIONS, history=history, tools=tools.SCHEMAS, effort=effort(), tool_choice="none"
+        instructions=INSTRUCTIONS, history=history, tools=tools, effort=effort(), tool_choice="none"
     )
     usage.record(reply, conversation=False)
     return reply.text
 
 
 def effort() -> str | None:
-    """The reasoning level to send. None for models that don't reason, which reject one."""
-    return config.get("effort") if listing.efforts(config.get("model")) else None
+    """The reasoning level to send, or None for the provider's default."""
+    return listing.level(config.get("model"), config.get("effort"))

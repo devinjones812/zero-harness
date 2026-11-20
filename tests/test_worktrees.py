@@ -3,8 +3,9 @@ import subprocess
 
 import pytest
 
-from zero_harness import checkpoints, config, workdir, worktrees
+from zero_harness import checkpoints, config, workdir
 from zero_harness.tools import edit_file
+from zero_harness.tools.subagent import worktrees
 
 LINES = "".join(f"line {n}\n" for n in range(1, 21))
 
