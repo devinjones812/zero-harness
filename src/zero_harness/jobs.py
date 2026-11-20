@@ -31,7 +31,7 @@ def on_finish() -> None:
 
 
 async def start(command: str) -> int:
-    """Start a command in the background. Output goes to a log file; on_finish() runs when it exits."""
+    """Start a command in the background. Returns its job id."""
     fd, name = tempfile.mkstemp(prefix="zero-harness-job-", suffix=".log")
     log = Path(name)
     try:

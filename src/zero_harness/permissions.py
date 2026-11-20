@@ -1,6 +1,6 @@
 """Approval for the agent's edits and commands, by mode. ask: always ask. auto-review: allow edits inside the project
-except protected files, and commands the reviewer in safety.py clears. auto-max: allow all but destructive commands.
-Each answer is logged to approvals.jsonl, to tune what auto modes allow."""
+or scratch folder except protected files (PROTECTED), and commands the reviewer in safety.py clears. auto-max: allow
+all but destructive commands. Each answer is logged to approvals.jsonl, to tune what auto modes allow."""
 
 import asyncio
 import atexit
@@ -55,11 +55,8 @@ async def ask(**request) -> str | None:
 
 
 async def approve_edit(path: str) -> str | None:
-    """auto-review allows edits inside the working directory or scratch folder, except secrets and git internals.
-
-    auto-max allows every edit. A subagent's edits inside its own worktree need no approval: they reach the user's
-    files only through approve_changes.
-    """
+    """Apply the approval mode to one edit. A subagent's edits inside its own worktree need no approval: they reach
+    the user's files only through approve_changes."""
     current = workdir.tree.get()
     if current and not edit_risk(path, current.top):
         return None

@@ -12,7 +12,7 @@ def start() -> None:
 
 
 def record(path: str) -> None:
-    """Save a file's content before its first edit this turn. None means the file did not exist."""
+    """Call before each edit. Saving None means the file did not exist."""
     file = Path(path).resolve()
     if turns and file not in turns[-1]:
         turns[-1][file] = file.read_bytes() if file.exists() else None

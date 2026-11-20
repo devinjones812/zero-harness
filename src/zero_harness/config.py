@@ -26,7 +26,7 @@ DEFAULTS = {
 REVIEWERS = {"openai": "OPENAI_API_KEY", "jev": "TYPESAFE_API_KEY"}
 
 saved = json.loads(PATH.read_text()) if PATH.exists() else {}
-if saved.get("mode") == "auto":  # renamed
+if saved.get("mode") == "auto":  # old name for auto-review
     saved["mode"] = "auto-review"
 
 
