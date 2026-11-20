@@ -35,7 +35,13 @@ async def run(history: list, args: str) -> None:
         await registry.load_account(name)
     except (ValueError, *errors.recoverable()) as error:
         note(f"{name}: could not list your models ({error}).")
-        return
+        if getattr(error, "status_code", None) != 401 or not await ask_key(name):
+            return
+        try:
+            await registry.load_account(name)
+        except (ValueError, *errors.recoverable()) as error:
+            note(f"{name}: could not list your models ({error}).")
+            return
     if len(words) > 1 and words[1] not in registry.account[name]:
         note(f"{name} has no model {words[1]!r} for your key. Try /model {name} for a list.")
         return
@@ -69,12 +75,14 @@ async def ask_key(name: str) -> bool:
     if "key_url" in settings:
         note(f"Create one at {settings['key_url']}")
     key = await user_input.secret("Paste key: ")
-    if not key or not key.strip():
+    key = (key or "").strip().removeprefix(f"{env}=").strip()
+    if not key:
         return False
     config.HOME.mkdir(parents=True, exist_ok=True)
     env_file = config.HOME / ".env"
-    with env_file.open("a") as file:
-        file.write(f"\n{env}={key.strip()}\n")
+    lines = env_file.read_text().splitlines() if env_file.exists() else []
+    lines = [line for line in lines if not line.startswith(f"{env}=")]
+    env_file.write_text("\n".join([*lines, f"{env}={key}"]) + "\n")
     env_file.chmod(0o600)
-    os.environ[env] = key.strip()
+    os.environ[env] = key
     return True

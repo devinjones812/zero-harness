@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 HOME = Path.home() / ".zero"
 PATH = HOME / "config.json"
 
-load_dotenv(HOME / ".env")
+load_dotenv(HOME / ".env", override=True)  # /reload keeps os.environ, so a changed key must replace it
 
 DEFAULTS = {
     "model": None,  # the user picks one on first run
