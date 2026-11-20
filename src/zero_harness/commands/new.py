@@ -9,6 +9,6 @@ def run(history: list, args: str) -> None:
     history.clear()
     sessions.new()
     jobs.detach()
-    subagent.cancel_all()  # their reports belong to the old session
+    subagent.cancel_all(drop_reports=True)  # their reports belong to the old session
     user_input.clear()
     logo.welcome()

@@ -25,7 +25,7 @@ async def run(history: list, args: str) -> None:
         choices = [questionary.Choice(sessions.label(path), value=path) for path in paths]
         path = await questionary.select("session:", choices=choices).ask_async()
     if path:
-        subagent.cancel_all()  # their reports belong to the old session
+        subagent.cancel_all(drop_reports=True)  # their reports belong to the old session
         history[:] = sessions.load(path)
         replay(history)
         notes.console.export_text()  # Discard the replay; the loaded session has its own capture buffer.

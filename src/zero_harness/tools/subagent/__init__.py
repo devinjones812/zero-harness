@@ -18,6 +18,7 @@ running = asyncio.Semaphore(4)  # at most this many subagents at once
 started = 0  # numbers subagents, for their labels
 tasks: dict[str, asyncio.Task] = {}  # running subagents by label
 logs: dict[str, Path] = {}  # every subagent's live log this session, for /watch
+held: list[str] = []  # reports kept until no subagent is running, so the agent answers once
 
 SCHEMA = {
     "type": "function",
@@ -78,7 +79,8 @@ async def run(task: str, model: str = "", edit: bool = False) -> str:
 
 
 async def background(label: str, model: str, level: str | None, task: str, top: Path | None) -> None:
-    """Run a subagent, show it as working below the conversation, and report when done. Cancelling reports nothing."""
+    """Run a subagent, show it as working below the conversation, and report when done. Reports wait until no other
+    subagent is running, then arrive as one message. Cancelling reports nothing."""
     shown = " ".join(filter(None, (model, level)))
     detail = f"/watch {label.split()[-1]}  {shown}  {' '.join(task.split())}"
     user_input.subagents[label] = ("waiting", detail)
@@ -101,7 +103,11 @@ async def background(label: str, model: str, level: str | None, task: str, top: 
         user_input.subagents.pop(label, None)
         tasks.pop(label, None)
         log.close(f"{label} {ending}")
-    on_finish(f"[{label} finished] Its task: {task}\n\nIts report:\n{report}")
+        if ending != "stopped":
+            held.append(f"[{label} finished] Its task: {task}\n\nIts report:\n{report}")
+        if held and not tasks:  # the last running subagent: send every held report together
+            on_finish("\n\n".join(held))
+            held.clear()
 
 
 async def edit_in_worktree(label: str, model: str, level: str | None, task: str, top: Path, log: Log) -> str:
@@ -120,8 +126,10 @@ async def edit_in_worktree(label: str, model: str, level: str | None, task: str,
         await asyncio.to_thread(worktrees.remove, tree)
 
 
-def cancel_all() -> int:
-    """Stop every running subagent. Returns how many there were."""
+def cancel_all(drop_reports: bool = False) -> int:
+    """Stop every running subagent. Returns how many there were. drop_reports also discards held reports."""
+    if drop_reports:
+        held.clear()
     for task in tasks.values():
         task.cancel()
     return len(tasks)
