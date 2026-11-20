@@ -29,7 +29,7 @@ from zero_harness.commands import mode, model, reload, resume
 from zero_harness.commands import registry as commands
 from zero_harness.models import registry as models
 from zero_harness.tools import registry as tools
-from zero_harness.tools import subagent
+from zero_harness.tools.subagent import tool as subagent
 from zero_harness.ui import logo, notes, pickers, user_input
 from zero_harness.ui.notes import note
 

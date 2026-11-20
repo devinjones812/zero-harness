@@ -5,11 +5,11 @@ from zero_harness.tools import (
     job,
     read_file,
     runner,
-    subagent,
     todo,
     web_fetch,
     web_search,
 )
+from zero_harness.tools.subagent import tool as subagent
 
 TOOLS = [bash, job, read_file, edit_file, grep, web_search, web_fetch, todo, subagent]
 

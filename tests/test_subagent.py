@@ -6,8 +6,8 @@ import pytest
 from zero_harness import config, usage
 from zero_harness.models import registry, tiers
 from zero_harness.models.reply import Reply, Usage
-from zero_harness.tools import subagent
 from zero_harness.tools.subagent import models as subagent_models
+from zero_harness.tools.subagent import tool as subagent
 from zero_harness.ui import pickers, user_input
 
 
@@ -186,3 +186,28 @@ def test_subagents_run_together_and_cancel_without_reporting(monkeypatch):
 
     asyncio.run(scenario())
     assert reports == [] and not subagent.tasks
+
+
+def test_reports_wait_for_the_last_subagent_then_arrive_together(monkeypatch):
+    config.saved.update(model="anthropic/claude-haiku-5-5", fast_model="anthropic/claude-haiku-5-5")
+    second_done, reports = asyncio.Event(), []
+
+    async def fake_call(*, history, **_):
+        if history[0]["content"] == "two":
+            await second_done.wait()
+        return reply(message(f"done {history[0]['content']}"))
+
+    monkeypatch.setattr(registry, "call", fake_call)
+    monkeypatch.setattr(subagent, "on_finish", reports.append)
+
+    async def scenario():
+        await subagent.run("one")
+        await subagent.run("two")
+        await asyncio.sleep(0.1)
+        assert reports == [] and len(subagent.tasks) == 1  # one finished, its report held
+        second_done.set()
+        await asyncio.gather(*subagent.tasks.values())
+
+    asyncio.run(scenario())
+    assert len(reports) == 1 and "done one" in reports[0] and "done two" in reports[0]
+    assert not subagent.held

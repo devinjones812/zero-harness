@@ -1,5 +1,5 @@
 from zero_harness import jobs, sessions
-from zero_harness.tools import subagent
+from zero_harness.tools.subagent import tool as subagent
 from zero_harness.ui import logo, user_input
 
 DESCRIPTION = "start a new session"

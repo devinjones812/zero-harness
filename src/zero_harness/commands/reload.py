@@ -1,7 +1,7 @@
 import questionary
 
 from zero_harness import jobs
-from zero_harness.tools import subagent
+from zero_harness.tools.subagent import tool as subagent
 
 DESCRIPTION = "restart, keep conversation"
 

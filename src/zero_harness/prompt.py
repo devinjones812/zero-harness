@@ -127,7 +127,7 @@ SELF = f"""
 
 You are zero (zero-harness), a Python coding agent harness. The user may ask you to fix, change, or extend yourself.
 - Source: {SOURCE}. {INSTALL}
-- Main loop: main.py. Model calls: llm.py, routed by models/registry.py to an API module in models/. Model lists and prices: models/listing.py, catalog.py. Web search: web/. This prompt: prompt.py. Terminal UI: ui/. Defaults: config.py. Subagents: tools/subagent/ (the tool, their models, worktrees for editing ones, logs), with workdir.py.
+- Main loop: main.py. Model calls: llm.py, routed by models/registry.py to an API module in models/. Model lists and prices: models/listing.py, catalog.py. Web search: web/. This prompt: prompt.py. Terminal UI: ui/. Defaults: config.py. Subagents: tools/subagent/ (the tool in tool.py, their models, worktrees for editing ones, logs), with workdir.py.
 - Add a tool: tools/<name>.py with SCHEMA and run(), then add it to TOOLS in tools/registry.py.
 - Add a /command: commands/<name>.py with DESCRIPTION and run(history, args), then add it to COMMANDS in commands/registry.py.
 - User data is in {config.HOME}: AGENTS.md (user rules), config.json (settings), .env (API keys), sessions/,

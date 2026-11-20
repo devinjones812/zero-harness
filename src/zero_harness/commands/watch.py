@@ -5,7 +5,7 @@ import sys
 
 import questionary
 
-from zero_harness.tools import subagent
+from zero_harness.tools.subagent import tool as subagent
 from zero_harness.ui.notes import note
 
 DESCRIPTION = "follow a subagent live"
