@@ -92,7 +92,7 @@ async def run(args: argparse.Namespace) -> None:
         with notes.console.capture():
             resume.replay(history)
     elif args.reloaded is None:
-        welcome()
+        logo.welcome()
         if config.get("mode") == "auto-review" and not config.reviewer():
             note(f"[mode] {mode.NO_REVIEWER}", style="yellow")
     if args.resume is not None:
@@ -107,12 +107,6 @@ async def run(args: argparse.Namespace) -> None:
             inbox.put_nowait(typed(args.message))
         await input_loop(history)
         loop.cancel()
-
-
-def welcome() -> None:
-    logo.show()
-    note(f"zero  {config.get('model')}  {os.getcwd()}")
-    note("type / for commands, Ctrl+C clears the input")
 
 
 async def ready() -> bool:

@@ -284,6 +284,13 @@ def setup(busy, commands: dict) -> None:
     session.app.layout = Layout(FloatContainer(screen, [menu]), focused_element=input_window)
 
 
+def clear() -> None:
+    """Erase the screen and scrollback, and forget past prints so a resize does not reprint them."""
+    notes.console.printed.clear()
+    session.app.output.write_raw("\x1b[H\x1b[2J\x1b[3J")
+    session.app.output.flush()
+
+
 async def read() -> str:
     """Wait for the next non-empty line the user sends."""
     while True:

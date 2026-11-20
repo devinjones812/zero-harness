@@ -1,7 +1,10 @@
+import os
+
 from rich.style import Style
 from rich.text import Text
 
-from zero_harness.ui.notes import console
+from zero_harness import config
+from zero_harness.ui.notes import console, note
 
 START = "#7ef0ff"
 END = "#3a7bff"
@@ -63,3 +66,9 @@ def show() -> None:
         lines[-1].append_text(Text.assemble("  ", BOLT, TAG))
         console.print(Text("\n").join(lines), no_wrap=True)
     console.print()
+
+
+def welcome() -> None:
+    show()
+    note(f"zero  {config.get('model')}  {os.getcwd()}")
+    note("type / for commands, Ctrl+C clears the input")

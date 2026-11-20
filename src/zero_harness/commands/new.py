@@ -1,6 +1,6 @@
 from zero_harness import jobs, sessions
 from zero_harness.tools import subagent
-from zero_harness.ui.notes import note
+from zero_harness.ui import logo, user_input
 
 DESCRIPTION = "start a new session"
 
@@ -10,4 +10,5 @@ def run(history: list, args: str) -> None:
     sessions.new()
     jobs.detach()
     subagent.cancel_all()  # their reports belong to the old session
-    note("new session")
+    user_input.clear()
+    logo.welcome()
