@@ -1,3 +1,7 @@
+"""Approval for the agent's edits and commands, by mode. ask: always ask. auto-review: allow edits inside the project
+except protected files, and commands the reviewer in safety.py clears. auto-max: allow all but destructive commands.
+Each answer is logged to approvals.jsonl, to tune what auto modes allow."""
+
 import asyncio
 import atexit
 import json

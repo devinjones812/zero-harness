@@ -1,3 +1,6 @@
+"""The main agent's model calls: respond() streams a turn to the screen, complete() is a hidden call for summaries, and
+title() names the session."""
+
 from zero_harness import config, usage
 from zero_harness.models import listing, registry
 from zero_harness.models.reply import Reply

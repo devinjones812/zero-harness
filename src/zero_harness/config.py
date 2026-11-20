@@ -1,3 +1,6 @@
+"""Settings in ~/.zero/config.json, and API keys loaded from ~/.zero/.env. Only values the user sets are saved, so a
+change to DEFAULTS still reaches existing users."""
+
 import json
 import os
 from pathlib import Path

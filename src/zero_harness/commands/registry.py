@@ -1,3 +1,6 @@
+"""The slash commands. Each module in COMMANDS has DESCRIPTION and run(history, args); complete(words) or OPTIONS for
+Tab; and ANYTIME = True if it may run while the agent works."""
+
 import inspect
 
 from zero_harness.commands import (

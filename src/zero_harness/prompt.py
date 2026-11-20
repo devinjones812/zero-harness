@@ -1,3 +1,6 @@
+"""System prompts. INSTRUCTIONS, the main agent's, is built once at startup: the base prompt, git status, notes on zero's
+own code, the user's and the project's rules (AGENTS.md), and skills. subagent() builds a subagent's."""
+
 import os
 import subprocess
 from datetime import date

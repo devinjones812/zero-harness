@@ -1,3 +1,6 @@
+"""Which web search backend serves web_search and web_fetch: Parallel if the user chose it, else the chat model's
+provider's own search, else Parallel if its key is set."""
+
 import os
 
 from zero_harness import config

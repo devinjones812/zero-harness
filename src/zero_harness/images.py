@@ -1,3 +1,6 @@
+"""Images in user messages: a path to an image file in the text attaches it. HEIC files, and images over MAX_EDGE, become
+a JPEG through macOS sips."""
+
 import base64
 import mimetypes
 import re

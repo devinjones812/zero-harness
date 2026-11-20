@@ -1,3 +1,6 @@
+"""Everything zero prints to scrollback: notes, tool lines, answers, thoughts, and diffs. The Console keeps each print, so
+a resize or /history can render it again at the current width."""
+
 import io
 
 import rich.console

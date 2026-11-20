@@ -1,3 +1,7 @@
+"""zero's entry point. Two tasks share one event loop: the input loop keeps the prompt on screen and routes what the
+user sends, and the agent loop runs a turn for each inbox arrival (a typed message, a subagent's report, or a finished
+background job). Ctrl+C stops the turn if one is running, else stops subagents, else quits."""
+
 import argparse
 import asyncio
 import os

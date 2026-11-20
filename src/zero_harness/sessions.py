@@ -1,3 +1,6 @@
+"""The current conversation's file in ~/.zero/sessions/: history, cost, title, /self-improve runs, and the screen text.
+main saves it after each turn and each command; /resume loads one."""
+
 import json
 from datetime import datetime
 from pathlib import Path

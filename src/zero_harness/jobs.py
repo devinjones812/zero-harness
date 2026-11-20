@@ -1,3 +1,6 @@
+"""Background commands, from bash with background=true. Output goes to a log file. When a job exits, on_finish() wakes
+the agent, which then gets a notice with the job's last output. Running jobs are killed when zero exits."""
+
 import asyncio
 import atexit
 import contextlib

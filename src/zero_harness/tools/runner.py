@@ -1,3 +1,6 @@
+"""Runs one tool call from the model: shows its tool line, calls the tool (plain functions in a worker thread), turns
+errors into text for the model, and cuts long results."""
+
 import asyncio
 import inspect
 import json

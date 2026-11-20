@@ -1,3 +1,6 @@
+"""The input box at the bottom of the screen (prompt_toolkit): key bindings, Tab completion, the status line, subagent
+status lines, the live reply area, and questions such as approvals (ask) and API keys (secret)."""
+
 import asyncio
 import os
 import re

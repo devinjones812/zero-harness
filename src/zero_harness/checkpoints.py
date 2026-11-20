@@ -1,3 +1,6 @@
+"""/undo. Before a file's first edit in a turn, save its content; undo restores the latest turn that edited files.
+In memory only: after a restart or /resume there is nothing to undo."""
+
 from pathlib import Path
 
 turns: list[dict[Path, bytes | None]] = []

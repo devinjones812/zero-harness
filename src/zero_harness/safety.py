@@ -1,3 +1,6 @@
+"""Command checks for the auto modes. auto-review asks a reviewer model (Jev or OpenAI Decisions) whether a command is
+routine; a match on ALWAYS_ASK or any reviewer failure asks the user instead. auto-max asks only for DESTRUCTIVE ones."""
+
 import re
 from pathlib import Path
 

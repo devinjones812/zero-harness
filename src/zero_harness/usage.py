@@ -1,3 +1,6 @@
+"""Session cost and context size. Prices come from the models.dev catalog; a model with no price makes the cost a lower
+bound. status() is the line under the input box."""
+
 from zero_harness import config
 from zero_harness.models import listing
 from zero_harness.models.reply import Reply, Usage

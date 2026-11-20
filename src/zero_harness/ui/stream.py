@@ -1,3 +1,5 @@
+"""A model reply as it streams: reasoning and answer text show in the live area, and finished parts move to scrollback."""
+
 from zero_harness.ui import notes, user_input
 
 

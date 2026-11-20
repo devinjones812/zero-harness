@@ -1,3 +1,6 @@
+"""Errors a turn survives. recoverable() lists them, report() shows one to the user, and repair() gives every unanswered
+tool call an output so the next request is valid."""
+
 import sys
 
 from zero_harness.ui.notes import note
