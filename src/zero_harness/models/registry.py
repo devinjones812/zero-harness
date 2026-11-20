@@ -1,17 +1,17 @@
-# Model providers. OpenAI and Anthropic are built in. Others go under "providers" in ~/.zero/config.json:
-#
-#   "providers": {
-#     "<name>": {"api": "responses", "base_url": "https://example.com/v1", "key_env": "EXAMPLE_API_KEY"}
-#   }
-#
-# - "api" names a module in APIS. Default "responses" (OpenAI's Responses API, which many providers serve).
-# - "base_url" defaults to the API's own. "key_env" names the key in ~/.zero/.env.
-# - "catalog" is the provider's id on models.dev, if it differs from <name>. models.dev supplies model lists,
-#   prices, context sizes, and reasoning levels (see listing.py).
-# Models are "<name>/<model id>"; /model lists them.
-#
-# To support a new API, add a module with client(), list_models(), and call() that returns a Reply,
-# converting history (Responses-API items) on the way in and the reply back to items on the way out.
+"""Model providers. OpenAI and Anthropic are built in. Others go under "providers" in ~/.zero/config.json:
+
+  "providers": {
+    "<name>": {"api": "responses", "base_url": "https://example.com/v1", "key_env": "EXAMPLE_API_KEY"}
+  }
+
+- "api" names a module in APIS. Default "responses" (OpenAI's Responses API, which many providers serve).
+- "base_url" defaults to the API's own. "key_env" names the key in ~/.zero/.env.
+- "catalog" is the provider's id on models.dev, if it differs from <name>. models.dev supplies model lists,
+  prices, context sizes, and reasoning levels (see listing.py).
+Models are "<name>/<model id>"; /model lists them.
+
+To support a new API, add a module with client(), list_models(), and call() that returns a Reply,
+converting history (Responses-API items) on the way in and the reply back to items on the way out."""
 
 import asyncio
 import os

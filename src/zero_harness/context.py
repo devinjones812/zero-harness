@@ -1,7 +1,7 @@
-# Keeps `history` small as a session grows. Every call resends all of it,
-# so large old tool results cost tokens on every call until removed.
-#
-# Thresholds are set for cost, far below the model's context limit.
+"""Keeps `history` small as a session grows. Every call resends all of it,
+so large old tool results cost tokens on every call until removed.
+
+Thresholds are set for cost, far below the model's context limit."""
 
 from zero_harness import llm, usage
 from zero_harness.ui import notes

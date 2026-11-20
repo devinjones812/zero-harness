@@ -1,6 +1,6 @@
-# Model prices, context windows, families, and reasoning levels from models.dev, a public catalog of AI providers.
-# zero keeps the fields it needs in ~/.zero/catalog.json and refreshes the file at startup once a day.
-# If a refresh fails, the old file stays in use.
+"""Model prices, context windows, families, and reasoning levels from models.dev, a public catalog of AI providers.
+zero keeps the fields it needs in ~/.zero/catalog.json and refreshes the file at startup once a day.
+If a refresh fails, the old file stays in use."""
 
 import json
 import time
