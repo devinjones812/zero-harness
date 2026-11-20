@@ -27,12 +27,16 @@ async def title(text: str) -> str:
 
 
 async def complete(history: list, tools: list) -> str:
-    """Hidden text-only call for internal use, e.g. compaction summaries. Send the same `tools` as respond() so the
-    prompt cache still matches."""
-    reply = await registry.call(
-        instructions=INSTRUCTIONS, history=history, tools=tools, effort=effort(), tool_choice="none"
-    )
-    usage.record(reply, conversation=False)
+    """Hidden text-only call for internal use, e.g. compaction summaries. Sends the same `tools` and tool_choice as
+    respond(), so the prompt cache still matches: Anthropic drops its cached messages when tool_choice changes. If the
+    model calls a tool anyway, retries once with tools off."""
+    for tool_choice in (None, "none"):
+        reply = await registry.call(
+            instructions=INSTRUCTIONS, history=history, tools=tools, effort=effort(), tool_choice=tool_choice
+        )
+        usage.record(reply, conversation=False)
+        if reply.text:
+            break
     return reply.text
 
 

@@ -90,6 +90,26 @@ def test_gives_up_with_a_clear_message(monkeypatch):
         asyncio.run(registry.call(instructions="", history=[], model="anthropic/claude-opus-5-5"))
 
 
+def test_complete_keeps_tool_choice_for_the_cache_and_retries_if_a_tool_is_called(monkeypatch):
+    from zero_harness import llm
+    from zero_harness.models.reply import Reply, Usage
+
+    config.saved["model"] = "anthropic/claude-opus-5-5"
+    used = Usage(input_tokens=10, cached_tokens=0, output_tokens=1)
+    tool_call = Reply("m", [{"type": "function_call", "call_id": "1", "name": "grep", "arguments": "{}"}], used)
+    text = Reply("m", [{"type": "message", "content": [{"type": "output_text", "text": "summary"}]}], used)
+    replies, choices = iter([text, tool_call, text]), []
+
+    async def call(*, tool_choice=None, **_):
+        choices.append(tool_choice)
+        return next(replies)
+
+    monkeypatch.setattr(llm.registry, "call", call)
+    assert asyncio.run(llm.complete([], [])) == "summary"
+    assert asyncio.run(llm.complete([], [])) == "summary"
+    assert choices == [None, None, "none"]  # the normal choice first; tools off only after a tool call
+
+
 def test_level_sends_only_what_the_model_offers():
     assert listing.level("anthropic/claude-opus-5-5", "high") == "high"
     assert listing.level("anthropic/claude-opus-5-5", "xhigh") is None  # not offered: the provider's default
