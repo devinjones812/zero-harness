@@ -17,7 +17,17 @@ _screen = ""  # Output carried over from a previous process, since the last capt
 
 
 def screen() -> str:
-    return _screen + notes.console.export_text(clear=False)
+    """Plain text of what the user saw, with each link's URL after its label."""
+    with notes.console._record_buffer_lock:
+        segments = [segment for segment in notes.console._record_buffer if not segment.control]
+    parts, link = [], None
+    for segment in segments:
+        new = segment.style.link if segment.style else None
+        if link and new != link:
+            parts.append(f" ({link})")
+        link = new
+        parts.append(segment.text)
+    return _screen + "".join(parts) + (f" ({link})" if link else "")
 
 
 def clear_screen() -> None:
