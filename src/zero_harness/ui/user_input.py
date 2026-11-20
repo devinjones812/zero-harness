@@ -4,6 +4,7 @@ status lines, the live reply area, and questions such as approvals (ask) and API
 import asyncio
 import os
 import re
+import shutil
 import time
 from bisect import bisect_left
 
@@ -75,8 +76,12 @@ def newline(event) -> None:
 
 
 @bindings.add("c-e")
+@bindings.add("c-s")
 def edit_in_editor(event) -> None:
-    """Ctrl+E opens the input in $EDITOR. Save and quit to put the text back in the input."""
+    """Ctrl+E or Ctrl+S opens the input in $VISUAL or $EDITOR, else micro if installed, else prompt_toolkit's fallbacks.
+    Save and quit to put the text back in the input."""
+    if not os.environ.get("VISUAL") and not os.environ.get("EDITOR") and shutil.which("micro"):
+        os.environ["EDITOR"] = "micro"
     event.current_buffer.open_in_editor()
 
 
