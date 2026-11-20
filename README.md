@@ -36,19 +36,12 @@ Run `zero`, pick a provider and model, and paste your key. It's stored locally i
 
 ## Subagents
 
-zero can hand a task to a subagent: a separate model run that gets only a brief and returns only its answer. This keeps zero's own context small and lets work run in parallel, in the background. Ask for subagents, or zero uses them when a task fits.
+A subagent is a separate model run that gets a brief and returns only its answer, so zero's context stays small and work runs in parallel. zero uses them to search and research, or when you ask.
 
-- **Read-only by default.** Subagents search, read files, and use the web. They never need approval or conflict.
-- **Editing subagents.** For changes, zero can give a subagent its own copy of the project (a git worktree, with your uncommitted changes and your `.venv` or `node_modules` linked in). It edits and runs tests there. When it finishes, zero merges its changes into your files with one approval, under your approval mode. `/undo` reverts them. If a file changed in your copy too, overlapping edits go back to zero to resolve. Needs a git repo.
-- **In the background.** You keep talking to zero while subagents work. Each shows `subagent N working...` above the status line; `/watch N` follows it live in a new window. Its report arrives like a message you sent. Up to 4 run at once. Ctrl+C with no turn running stops them.
-- **Any model.** Each subagent runs on one of:
-  - your current model (the default)
-  - `smart`: for hard, narrow problems, such as one failing test
-  - `fast`: for simple searches
-  - any model you name, such as "use openai/gpt-6.2-astra", even from another provider
-
-  zero asks you to pick the `smart` and `fast` models the first time it needs one, and saves your choice. Ask zero to change them.
-- **Costs** count toward the session total in the status line.
+- **In the background.** Keep talking while they work. `/watch N` follows one live, and its report arrives like a message. Up to 4 run at once; Ctrl+C with no turn running stops them.
+- **Models.** Read-only subagents run on your `fast` model. `smart` is for a hard, narrow problem zero is stuck on, and asks you first each time. Name any model ("use Opus 5.5") and zero opens the picker on it. zero confirms `fast` and `smart` on first use; change them with `/model fast` or `/model smart`.
+- **Editing, when you ask.** The subagent works in its own git worktree, with your uncommitted changes and `.venv` or `node_modules` linked in, on your current model. zero merges its changes with one approval, and `/undo` reverts them. Edits that overlap yours come back to zero. Needs a git repo.
+- **Costs** count toward the session total.
 
 ## Commands
 
